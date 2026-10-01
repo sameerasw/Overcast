@@ -78,3 +78,10 @@ Please read the [code of conduct](CODE_OF_CONDUCT.md) and the [security policy](
 ## License
 
 [MIT](LICENSE)
+
+
+<p align="center">
+  <a href="https://www.reddit.com/r/MadebySameerasw"><img  width="49%"  alt=" reddit-banner" src="https://github.com/user-attachments/assets/a5197458-d64a-4c6a-a6a3-9e1f36030205" /></a>
+  <a href="https://t.me/tidwib"><img  width="49%"  alt=" telegram-banner" src="https://github.com/user-attachments/assets/425b3cc1-9ac6-46ec-8f48-71c7af9c9ca2" /></a>
+</p>
+

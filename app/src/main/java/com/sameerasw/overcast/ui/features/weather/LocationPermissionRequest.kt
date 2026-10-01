@@ -5,7 +5,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +23,7 @@ private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_COARSE_LOC
 fun rememberLocationPermissionRequest(onResult: (Boolean) -> Unit = {}): () -> Unit {
     val context = LocalContext.current
     val currentOnResult = rememberUpdatedState(onResult)
+    val backgroundLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
         val granted = results.values.any { it }
         if (!granted) {
@@ -29,6 +32,12 @@ fun rememberLocationPermissionRequest(onResult: (Boolean) -> Unit = {}): () -> U
             if (blocked) openAppSettings(context)
         }
         currentOnResult.value(granted)
+        
+        if (granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
     }
     return remember(launcher) { { launcher.launch(LOCATION_PERMISSIONS) } }
 }

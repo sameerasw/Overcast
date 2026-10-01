@@ -1,12 +1,14 @@
 package com.sameerasw.overcast.weather.share
 
 import android.content.ContentProvider
+import android.content.Context
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.sameerasw.overcast.weather.WeatherRepository
 import kotlinx.coroutines.runBlocking
@@ -34,6 +36,7 @@ class WeatherContentProvider : ContentProvider() {
         }
         return MatrixCursor(arrayOf(COLUMN_JSON, COLUMN_UPDATED_AT, COLUMN_SCHEMA)).apply {
             snapshot?.let { addRow(arrayOf(gson.toJson(it), it.updatedAt, SCHEMA_VERSION)) }
+            setNotificationUri(context.contentResolver, SNAPSHOT_URI)
         }
     }
 
@@ -57,6 +60,12 @@ class WeatherContentProvider : ContentProvider() {
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = 0
 
     companion object {
+        val SNAPSHOT_URI: Uri = "content://com.sameerasw.overcast.weather/snapshot".toUri()
+
+        fun notifyChanged(context: Context) {
+            context.contentResolver.notifyChange(SNAPSHOT_URI, null)
+        }
+
         const val PERMISSION_READ_WEATHER = "com.sameerasw.overcast.permission.READ_WEATHER"
         const val PATH_SNAPSHOT = "/snapshot"
         const val METHOD_REFRESH = "refresh"

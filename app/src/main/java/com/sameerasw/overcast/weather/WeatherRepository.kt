@@ -11,6 +11,7 @@ import com.sameerasw.overcast.weather.model.WeatherLocation
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
 import com.sameerasw.overcast.weather.model.WeatherState
 import com.sameerasw.overcast.weather.provider.WeatherProviderException
+import com.sameerasw.overcast.weather.share.WeatherContentProvider
 import com.sameerasw.overcast.weather.provider.WeatherProviders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import java.io.File
 object WeatherRepository {
     private const val CACHE_FILE = "weather_cache.json"
     private const val MIN_INTERVAL_MS = 5 * 60_000L
+    private const val MAX_LOCATION_AGE_MS = 3 * 60 * 60_000L
 
     private val gson = Gson()
     private val mutex = Mutex()
@@ -38,6 +40,7 @@ object WeatherRepository {
     private data class WeatherCache(
         val snapshot: WeatherSnapshot? = null,
         val lastDeviceLocation: WeatherLocation? = null,
+        val lastDeviceLocationAt: Long? = null,
         val notifiedAlertIds: Set<String>? = null,
     )
 
@@ -98,6 +101,7 @@ object WeatherRepository {
                 cache = cache.copy(snapshot = snapshot)
                 persist(app)
                 _state.value = WeatherState(snapshot = snapshot)
+                WeatherContentProvider.notifyChanged(app)
                 true
             } catch (e: WeatherProviderException) {
                 val error = when (e.reason) {
@@ -147,10 +151,11 @@ object WeatherRepository {
             WeatherLocationMode.DEVICE -> {
                 val fresh = DeviceLocationSource.current(context)
                 if (fresh != null) {
-                    cache = cache.copy(lastDeviceLocation = fresh)
+                    cache = cache.copy(lastDeviceLocation = fresh, lastDeviceLocationAt = System.currentTimeMillis())
                     fresh
                 } else {
-                    cache.lastDeviceLocation.takeIf { DeviceLocationSource.hasPermission(context) }
+                    val age = System.currentTimeMillis() - (cache.lastDeviceLocationAt ?: 0L)
+                    cache.lastDeviceLocation.takeIf { DeviceLocationSource.hasPermission(context) && age < MAX_LOCATION_AGE_MS }
                 }
             }
         }

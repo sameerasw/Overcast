@@ -14,7 +14,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
@@ -65,11 +64,8 @@ import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
 import com.sameerasw.overcast.ui.core.pickers.SegmentedPicker
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherRepository
-import com.sameerasw.overcast.weather.location.DeviceLocationSource
-import com.sameerasw.overcast.weather.model.CityResult
 import com.sameerasw.overcast.weather.model.WeatherError
 import com.sameerasw.overcast.weather.provider.OpenMeteoModels
-import com.sameerasw.overcast.weather.provider.WeatherProviderException
 import com.sameerasw.overcast.weather.provider.WeatherProviders
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -97,22 +93,10 @@ fun WeatherSettingsUI(
     var savedKey by remember { mutableStateOf(settings.getWeatherApiKey(providerId).orEmpty()) }
     var keyInput by remember { mutableStateOf(savedKey) }
     var keyVisible by remember { mutableStateOf(false) }
-    var locationMode by remember { mutableStateOf(settings.getWeatherLocationMode()) }
-    var manualLabel by remember { mutableStateOf(settings.getWeatherManualLocation()?.third) }
-    var cityQuery by remember { mutableStateOf("") }
-    var cityResults by remember { mutableStateOf<List<CityResult>>(emptyList()) }
-    var searching by remember { mutableStateOf(false) }
-    var searchError by remember { mutableStateOf<Int?>(null) }
 
     fun refreshNow() {
         scope.launch { WeatherRepository.refresh(context, force = true) }
     }
-
-    val requestLocation = rememberLocationPermissionRequest { granted ->
-        if (granted) refreshNow()
-    }
-
-
 
     Column(
         modifier = modifier
@@ -261,111 +245,6 @@ fun WeatherSettingsUI(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                             )
-                        }
-                    }
-                }
-            }
-
-            SectionTitle(R.string.perm_location_title)
-            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
-                SegmentedPicker(
-                    items = listOf("device", "manual"),
-                    selectedItem = locationMode,
-                    onItemSelected = {
-                        locationMode = it
-                        settings.setWeatherLocationMode(it)
-                        if (it == "device" && !DeviceLocationSource.hasPermission(context)) {
-                            requestLocation()
-                        } else {
-                            refreshNow()
-                        }
-                    },
-                    labelProvider = {
-                        context.getString(if (it == "manual") R.string.weather_location_manual else R.string.weather_location_device)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (locationMode == "device" && !DeviceLocationSource.hasPermission(context)) {
-                    IconToggleItem(
-                        iconRes = R.drawable.rounded_my_location_24,
-                        title = stringResource(R.string.weather_error_location_permission),
-                        showToggle = false,
-                        onClick = { requestLocation() },
-                    )
-                }
-                if (locationMode == "manual") {
-                    Surface(color = MaterialTheme.colorScheme.surfaceBright, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            manualLabel?.let {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        painterResource(R.drawable.rounded_location_on_24),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Text(it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
-                                }
-                            }
-                            OutlinedTextField(
-                                value = cityQuery,
-                                onValueChange = { cityQuery = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                placeholder = { Text(stringResource(R.string.weather_search_city)) },
-                                leadingIcon = { Icon(painterResource(R.drawable.rounded_location_city_24), contentDescription = null) },
-                                trailingIcon = {
-                                    if (searching) {
-                                        LoadingIndicator(Modifier.size(24.dp))
-                                    } else {
-                                        IconButton(
-                                            onClick = {
-                                                HapticUtil.performVirtualKeyHaptic(view)
-                                                searching = true
-                                                searchError = null
-                                                scope.launch {
-                                                    try {
-                                                        cityResults = provider.searchCities(cityQuery, settings.getWeatherApiKey(providerId))
-                                                        if (cityResults.isEmpty()) searchError = R.string.weather_search_no_results
-                                                    } catch (e: WeatherProviderException) {
-                                                        searchError = if (e.reason == WeatherProviderException.Reason.INVALID_KEY) {
-                                                            R.string.weather_error_missing_key
-                                                        } else {
-                                                            R.string.weather_error_network
-                                                        }
-                                                    } finally {
-                                                        searching = false
-                                                    }
-                                                }
-                                            },
-                                            enabled = cityQuery.isNotBlank(),
-                                        ) {
-                                            Icon(painterResource(R.drawable.rounded_search_24), contentDescription = stringResource(R.string.action_search))
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                            )
-                            searchError?.let {
-                                Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                            }
-                            cityResults.forEach { city ->
-                                Text(
-                                    text = city.label,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            HapticUtil.performVirtualKeyHaptic(view)
-                                            settings.setWeatherManualLocation(city.latitude, city.longitude, city.name)
-                                            manualLabel = city.name
-                                            cityResults = emptyList()
-                                            cityQuery = ""
-                                            refreshNow()
-                                        }
-                                        .padding(vertical = 10.dp),
-                                )
-                            }
                         }
                     }
                 }

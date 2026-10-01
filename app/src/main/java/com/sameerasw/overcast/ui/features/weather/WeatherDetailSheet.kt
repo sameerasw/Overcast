@@ -27,12 +27,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalDensity
-import android.os.Build
-import androidx.compose.material3.dynamicDarkColorScheme
 import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,15 +51,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.Surface
@@ -81,7 +74,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -89,7 +81,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -220,6 +211,12 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
     val requestLocation = rememberLocationPermissionRequest { granted ->
         if (granted) scope.launch { WeatherRepository.refresh(context, force = true) }
     }
+    var showLocations by remember { mutableStateOf(false) }
+    val sheetTop = remember { mutableFloatStateOf(Float.NaN) }
+    val sheetOpen = showLocations
+    val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val sheetCornerPx = with(LocalDensity.current) { 28.dp.toPx() }
 
     LaunchedEffect(Unit) {
         WeatherRepository.ensureLoaded(context)
@@ -244,7 +241,26 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         shapes = Shapes,
     ) {
         CompositionLocalProvider(LocalRainSurfaces provides rainSurfaces) {
-        val glassRain = effectSpec.layers.filterIsInstance<WeatherEffectLayer.Rain>().maxByOrNull { it.intensity }
+        if (showLocations) {
+            LocationsBottomSheet(
+                onDismissRequest = { showLocations = false },
+                onSelectCurrent = {
+                    settings.setWeatherLocationMode("device")
+                    if (DeviceLocationSource.hasPermission(context)) {
+                        scope.launch { WeatherRepository.refresh(context, force = true) }
+                    } else {
+                        requestLocation()
+                    }
+                },
+                onSelectPlace = { place ->
+                    settings.setWeatherManualLocation(place.latitude, place.longitude, place.name)
+                    settings.setWeatherLocationMode("manual")
+                    scope.launch { WeatherRepository.refresh(context, force = true) }
+                },
+                onTopChanged = { sheetTop.floatValue = it },
+            )
+        }
+        val glassRain = effectSpec.layers.filterIsInstance<WeatherEffectLayer.Rain>().maxByOrNull { it.intensity }.takeUnless { sheetOpen }
         val density = LocalDensity.current
         val collapse = remember { mutableFloatStateOf(0f) }
         val scrollTick = remember { intArrayOf(0) }
@@ -282,7 +298,17 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                         modifier = Modifier.matchParentSize(),
                         strength = 1.7f,
                         haptics = effectHaptics,
-                        surfaces = { rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }.filter { it.rect.top >= headerBottom.floatValue } },
+                        surfaces = {
+                            val top = sheetTop.floatValue
+                            val cards = rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }
+                                .filter { it.rect.top >= headerBottom.floatValue }
+                            if (top.isNaN()) {
+                                cards
+                            } else {
+                                cards.filter { it.rect.bottom <= top } +
+                                    RainSurface("locations-sheet", Rect(0f, top, screenWidthPx, screenHeightPx), sheetCornerPx, 0f, screenWidthPx)
+                            }
+                        },
                         scrollTick = { scrollTick[0] },
                     )
                 }
@@ -318,6 +344,18 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                                 FilledTonalButton(onClick = { requestLocation() }) {
                                     Text(stringResource(R.string.weather_grant_location))
+                                }
+                            }
+                        }
+                        if (!state.loading) {
+                            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Center) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        HapticUtil.performVirtualKeyHaptic(view)
+                                        showLocations = true
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.weather_choose_location))
                                 }
                             }
                         }
@@ -414,7 +452,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                 val progress = collapse.floatValue
                                 Spacer(Modifier.height(14.dp))
                                 Box(Modifier.foldAway(((progress - 0.25f) / 0.5f).coerceIn(0f, 1f))) {
-                                    LocationChip(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
+                                    LocationChip(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING), onClick = { showLocations = true })
                                 }
                                 Header(snapshot, unit, palette, progress, Modifier.padding(horizontal = SIDE_PADDING))
                             }
@@ -507,11 +545,15 @@ private const val COMBINE_AT = 0.9f
 private const val HEADER_EXTRAS_DP = 170f
 
 @Composable
-private fun LocationChip(snapshot: WeatherSnapshot, palette: WeatherPalette, modifier: Modifier) {
+private fun LocationChip(snapshot: WeatherSnapshot, palette: WeatherPalette, modifier: Modifier, onClick: () -> Unit) {
+    val view = LocalView.current
     val place = listOf(snapshot.locationName, snapshot.region).filter { it.isNotBlank() }.joinToString(", ")
-    if (place.isBlank()) return
+        .ifBlank { stringResource(R.string.weather_choose_location) }
     AssistChip(
-        onClick = {},
+        onClick = {
+            HapticUtil.performVirtualKeyHaptic(view)
+            onClick()
+        },
         modifier = modifier,
         label = { Text(place, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium) },
         leadingIcon = { Icon(painterResource(R.drawable.rounded_location_on_24), null, modifier = Modifier.size(20.dp)) },

@@ -16,6 +16,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import com.sameerasw.overcast.ui.components.menus.LocalDropdownMenuDismiss
+import com.sameerasw.overcast.ui.components.menus.SegmentedDropdownMenu
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -68,12 +72,32 @@ fun IconToggleItem(
     settingsIconRes: Int = R.drawable.rounded_settings_24,
     trailingContent: (@Composable () -> Unit)? = null,
     infoText: String? = null,
+    longClickMenu: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val view = LocalView.current
     val context = LocalContext.current
     val finalIconRes = icon ?: iconRes
     val finalDescription = subtitle ?: description
     val finalIsChecked = checked ?: isChecked
+    var showMenu by remember { mutableStateOf(false) }
+    val onLongClickAction: (() -> Unit)? =
+        if (longClickMenu != null) {
+            {
+                HapticUtil.performVirtualKeyHaptic(view)
+                showMenu = true
+            }
+        } else {
+            null
+        }
+    val renderMenu: @Composable () -> Unit = {
+        if (longClickMenu != null) {
+            SegmentedDropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                CompositionLocalProvider(LocalDropdownMenuDismiss provides { showMenu = false }) {
+                    longClickMenu()
+                }
+            }
+        }
+    }
     // ListItem's internal clickable consumes the down/up touch events even when `enabled` is
     // false (it only skips invoking onClick), so a click modifier chained onto the same node
     // never sees an unconsumed event to react to. A sibling Box drawn on top intercepts the
@@ -107,6 +131,7 @@ fun IconToggleItem(
                             onDisabledClick()
                         }
                     },
+                    onLongClick = onLongClickAction,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -185,6 +210,7 @@ fun IconToggleItem(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
+                        renderMenu()
                     },
                 )
             } else {
@@ -202,6 +228,7 @@ fun IconToggleItem(
                             onDisabledClick()
                         }
                     },
+                    onLongClick = onLongClickAction,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -299,12 +326,14 @@ fun IconToggleItem(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
+                        renderMenu()
                     },
                 )
             }
         } else {
             ListItem(
                 onClick = onClickAction,
+                onLongClick = onLongClickAction,
                 enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -344,6 +373,7 @@ fun IconToggleItem(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    renderMenu()
                 },
             )
         }

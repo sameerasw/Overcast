@@ -21,6 +21,8 @@ class SettingsRepository(
         const val KEY_WEATHER_OPENMETEO_MODEL = "weather_openmeteo_model"
         const val KEY_WEATHER_LOCATION_MODE = "weather_location_mode"
         const val KEY_WEATHER_MANUAL_LOCATION = "weather_manual_location"
+        const val KEY_WEATHER_SAVED_PLACES = "weather_saved_places"
+        const val KEY_WEATHER_RECENT_PLACES = "weather_recent_places"
         const val KEY_WEATHER_UNITS = "weather_units"
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"

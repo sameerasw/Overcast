@@ -10,7 +10,6 @@
 package com.sameerasw.overcast.utils
 
 import android.Manifest
-import android.content.Context
 import android.media.AudioAttributes
 import android.os.Build
 import android.os.VibrationAttributes

@@ -4,7 +4,6 @@
     <string name="action_save">Save</string>
     <string name="action_search">Search</string>
     <string name="dev_simulate_weather_title">Simulate weather</string>
-    <string name="perm_location_title">Location</string>
     <string name="shorten_paste_button">Paste</string>
     <string name="weather_alert_until">Until %1$s</string>
     <string name="weather_api_key_title">API key</string>
@@ -36,7 +35,6 @@
     <string name="weather_interval_hours">%1$d h</string>
     <string name="weather_interval_minutes">%1$d min</string>
     <string name="weather_location_device">Current location</string>
-    <string name="weather_location_manual">Pick a city</string>
     <string name="weather_model_title">Forecast model</string>
     <string name="weather_not_loaded">Not loaded yet</string>
     <string name="weather_provider_title">Provider</string>
@@ -75,13 +73,18 @@
     <string name="action_expand">Expand</string>
     <string name="action_license">License</string>
     <string name="action_source_code">Source Code</string>
-    <string name="action_view_on_github">View on GitHub</string>
     <string name="action_back">Back</string>
     <string name="app_description">Beautiful, detailed weather for your Android</string>
     <string name="licenses_credits_subtitle">Open source projects powering Overcast</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_options_enabled">Developer options enabled</string>
     <string name="developer_options_disabled">Developer options disabled</string>
-    <string name="settings_section_about">About</string>
     <string name="dev_simulate_alerts_title">Simulate alerts</string>
+    <string name="action_clear">Clear</string>
+    <string name="weather_section_saved">Saved</string>
+    <string name="weather_section_recent">Recent</string>
+    <string name="weather_place_save">Save</string>
+    <string name="weather_place_remove_saved">Remove from saved</string>
+    <string name="weather_place_remove_recent">Remove</string>
+    <string name="weather_choose_location">Choose a location</string>
 </resources>

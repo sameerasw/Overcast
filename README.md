@@ -10,6 +10,13 @@ An immersive weather app for Android built with Material 3 Expressive. Further i
   <a href="https://github.com/sameerasw/Overcast/issues/new?template=feature_request.yml"><img alt="Request a feature" src="https://img.shields.io/badge/Request-a%20feature-a26?style=for-the-badge&logo=apachespark&logoColor=%23fff&labelColor=%23a26"></a>
 </p>
 
+<p align="center">
+<img width="33%" alt="rain" src="https://github.com/user-attachments/assets/93e83128-bb93-40c1-8472-ea5e689d877f" />
+<img width="33%" alt="snow" src="https://github.com/user-attachments/assets/49997203-5c13-483a-b651-23f7e3b67a69" />
+<img width="33%" alt="hot" src="https://github.com/user-attachments/assets/b877dbed-0814-4b73-9b43-10e00b57fcb3" />
+</p>
+
+
 ---
 
 ## Navigation

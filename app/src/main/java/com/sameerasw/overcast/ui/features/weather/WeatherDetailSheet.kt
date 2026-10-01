@@ -388,8 +388,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                         .padding(bottom = 40.dp),
                                     verticalArrangement = Arrangement.spacedBy(20.dp),
                                 ) {
-                                    snapshot.activeAlerts().sortedByDescending { it.severity.ordinal }
-                                        .forEach { AlertCard(it, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
+                                    AlertsSection(snapshot.activeAlerts().sortedByDescending { it.severity.ordinal }, palette)
                                     HourlySection(snapshot, unit, palette)
                                     snapshot.daily.orEmpty().takeIf { it.isNotEmpty() }
                                         ?.let { DailySection(it, unit, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
@@ -694,28 +693,104 @@ private fun DegreeSign(digitSize: TextUnit, font: FontFamily, color: Color) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AlertCard(alert: WeatherAlert, palette: WeatherPalette, modifier: Modifier) {
+private fun AlertsSection(alerts: List<WeatherAlert>, palette: WeatherPalette) {
+    when {
+        alerts.isEmpty() -> Unit
+        alerts.size == 1 -> {
+            val alert = alerts.first()
+            AlertCard(
+                alert,
+                palette,
+                Modifier
+                    .padding(horizontal = SIDE_PADDING)
+                    .rainSurface("alert:${alert.id}")
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.extraLarge),
+                compact = false,
+            )
+        }
+
+        else -> BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val spacing = 4.dp
+            val smallItemWidth = 44.dp
+            val carouselState = rememberCarouselState { alerts.size }
+            HorizontalMultiBrowseCarousel(
+                state = carouselState,
+                preferredItemWidth = maxWidth - SIDE_PADDING * 2 - smallItemWidth - spacing,
+                itemSpacing = spacing,
+                minSmallItemWidth = smallItemWidth,
+                maxSmallItemWidth = smallItemWidth,
+                contentPadding = PaddingValues(horizontal = SIDE_PADDING),
+                modifier = Modifier.fillMaxWidth().height(ALERT_CAROUSEL_HEIGHT),
+            ) { index ->
+                val alert = alerts[index]
+                AlertCard(
+                    alert,
+                    palette,
+                    Modifier
+                        .rainSurface("alert:${alert.id}", mask = { carouselItemDrawInfo.maskRect })
+                        .fillMaxSize()
+                        .maskClip(MaterialTheme.shapes.extraLarge),
+                    compact = true,
+                )
+            }
+        }
+    }
+}
+
+private val ALERT_CAROUSEL_HEIGHT = 190.dp
+
+@Composable
+private fun AlertCard(alert: WeatherAlert, palette: WeatherPalette, modifier: Modifier, compact: Boolean) {
     val context = LocalContext.current
     val alertColor = MaterialTheme.colorScheme.error
     Column(
         modifier
-            .rainSurface("alert:${alert.id}")
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.extraLarge)
             .background(alertColor.copy(alpha = 0.22f))
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(painterResource(R.drawable.rounded_warning_24), null, tint = alertColor, modifier = Modifier.size(24.dp))
-            Text(alert.event, color = palette.onBase, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                alert.event,
+                color = palette.onBase,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = if (compact) 1 else Int.MAX_VALUE,
+                softWrap = !compact,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
         }
         alert.expiresMillis?.let {
-            Text(stringResource(R.string.weather_alert_until, formatTime(context, it)), color = palette.onBaseMuted, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.weather_alert_until, formatTime(context, it)),
+                color = palette.onBaseMuted,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                softWrap = false,
+            )
         }
-        if (alert.headline != alert.event) Text(alert.headline, color = palette.onBase, style = MaterialTheme.typography.bodyMedium)
-        if (alert.description.isNotBlank()) Text(alert.description, color = palette.onBaseMuted, style = MaterialTheme.typography.bodySmall)
+        if (alert.headline != alert.event) {
+            Text(
+                alert.headline,
+                color = palette.onBase,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = if (compact) 2 else Int.MAX_VALUE,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (alert.description.isNotBlank()) {
+            Text(
+                alert.description,
+                color = palette.onBaseMuted,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = if (compact) 3 else Int.MAX_VALUE,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

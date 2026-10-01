@@ -3,6 +3,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="app_window_background">#FFFFFFFF</color>
-    <color name="branding_icon_background">#FF6650a4</color>
+    <color name="branding_icon_background">#FFFFC9</color>
     <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

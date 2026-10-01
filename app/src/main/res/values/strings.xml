@@ -64,6 +64,7 @@
     <string name="app_canvas">Canvas</string>
     <string name="app_tasks">Tasks</string>
     <string name="app_zero">Zero</string>
+    <string name="app_essentials">Essentials</string>
     <string name="action_licenses_and_credits">Licenses</string>
     <string name="send_email_chooser_title">Send email</string>
     <string name="error_no_email_app">No email app available</string>
@@ -74,7 +75,7 @@
     <string name="action_license">License</string>
     <string name="action_source_code">Source Code</string>
     <string name="action_back">Back</string>
-    <string name="app_description">Beautiful, detailed weather for your Android</string>
+    <string name="app_description">Weather is also Essential</string>
     <string name="licenses_credits_subtitle">Open source projects powering Overcast</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_options_enabled">Developer options enabled</string>

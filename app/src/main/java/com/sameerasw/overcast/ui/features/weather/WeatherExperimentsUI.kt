@@ -27,6 +27,7 @@ fun WeatherExperimentsUI(modifier: Modifier = Modifier) {
     val view = LocalView.current
     val settings = remember { SettingsRepository(context) }
     var simulatedWeather by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_WEATHER, WeatherSimulation.OFF) ?: WeatherSimulation.OFF) }
+    var simulatedAlert by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_ALERT, WeatherSimulation.OFF) ?: WeatherSimulation.OFF) }
     var simulatedTime by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_TIME, "auto") ?: "auto") }
     var simulatedTemp by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_TEMP, "auto") ?: "auto") }
 
@@ -44,6 +45,23 @@ fun WeatherExperimentsUI(modifier: Modifier = Modifier) {
                         HapticUtil.performVirtualKeyHaptic(view)
                         simulatedWeather = preset.id
                         settings.putString(SettingsRepository.KEY_DEBUG_SIMULATED_WEATHER, preset.id)
+                    },
+                )
+            }
+        }
+        ConfigPickerItem(
+            title = stringResource(R.string.dev_simulate_alerts_title),
+            iconRes = R.drawable.rounded_warning_24,
+            selectedValue = WeatherSimulation.alertPresets.firstOrNull { it.id == simulatedAlert }?.label.orEmpty(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            WeatherSimulation.alertPresets.forEach { preset ->
+                SegmentedDropdownMenuItem(
+                    text = { Text(preset.label) },
+                    onClick = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        simulatedAlert = preset.id
+                        settings.putString(SettingsRepository.KEY_DEBUG_SIMULATED_ALERT, preset.id)
                     },
                 )
             }

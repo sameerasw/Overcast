@@ -26,6 +26,7 @@ class SettingsRepository(
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
         const val KEY_DEBUG_SIMULATED_WEATHER = "debug_simulated_weather"
+        const val KEY_DEBUG_SIMULATED_ALERT = "debug_simulated_alert"
         const val KEY_DEBUG_SIMULATED_TIME = "debug_simulated_time"
         const val KEY_DEBUG_SIMULATED_TEMP = "debug_simulated_temp"
 
@@ -68,6 +69,9 @@ class SettingsRepository(
         } else {
             null
         }
+
+    fun getSimulatedAlertId(): String? =
+        if (isWeatherExperimentalEnabled()) getString(KEY_DEBUG_SIMULATED_ALERT, WeatherSimulation.OFF)?.takeIf { it != WeatherSimulation.OFF } else null
 
     fun getSimulatedTimeOfDay(): String? =
         if (isWeatherExperimentalEnabled()) getString(KEY_DEBUG_SIMULATED_TIME, "auto")?.takeIf { it != "auto" } else null

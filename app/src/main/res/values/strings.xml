@@ -83,4 +83,5 @@
     <string name="developer_options_enabled">Developer options enabled</string>
     <string name="developer_options_disabled">Developer options disabled</string>
     <string name="settings_section_about">About</string>
+    <string name="dev_simulate_alerts_title">Simulate alerts</string>
 </resources>

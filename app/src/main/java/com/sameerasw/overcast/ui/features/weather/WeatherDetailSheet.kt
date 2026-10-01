@@ -173,8 +173,10 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?): WeatherPresent
     val simulation = remember(settingsVersion) { settings.getSimulatedWeather() }
     val timeOverride = remember(settingsVersion) { settings.getSimulatedTimeOfDay() }
     val tempOverride = remember(settingsVersion) { settings.getSimulatedTempC() }
+    val alertOverride = remember(settingsVersion) { settings.getSimulatedAlertId() }
     val simulated = real?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
     val snapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
+        ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
     val unit = remember(settingsVersion) { WeatherFormat.unitFor(settings.getWeatherUnits()) }
     var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {

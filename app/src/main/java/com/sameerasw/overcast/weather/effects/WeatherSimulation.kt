@@ -1,6 +1,8 @@
 package com.sameerasw.overcast.weather.effects
 
 import com.sameerasw.overcast.weather.effects.WeatherEffectLayer.Clouds
+import com.sameerasw.overcast.weather.model.AlertSeverity
+import com.sameerasw.overcast.weather.model.WeatherAlert
 import com.sameerasw.overcast.weather.model.WeatherCondition
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
 import com.sameerasw.overcast.weather.effects.WeatherEffectLayer.Fog
@@ -13,8 +15,40 @@ import com.sameerasw.overcast.weather.effects.WeatherEffectLayer.SunGlow
 
 class WeatherSimulationPreset(val id: String, val label: String, val spec: WeatherEffectSpec)
 
+class AlertSimulationPreset(val id: String, val label: String, val severities: List<AlertSeverity>)
+
 object WeatherSimulation {
     const val OFF = "off"
+
+    val alertPresets = listOf(
+        AlertSimulationPreset(OFF, "Off", emptyList()),
+        AlertSimulationPreset("minor", "Minor", listOf(AlertSeverity.MINOR)),
+        AlertSimulationPreset("moderate", "Moderate", listOf(AlertSeverity.MODERATE)),
+        AlertSimulationPreset("severe", "Severe", listOf(AlertSeverity.SEVERE)),
+        AlertSimulationPreset("extreme", "Extreme", listOf(AlertSeverity.EXTREME)),
+        AlertSimulationPreset("unknown", "Unknown", listOf(AlertSeverity.UNKNOWN)),
+        AlertSimulationPreset(
+            "all",
+            "All severities",
+            listOf(AlertSeverity.EXTREME, AlertSeverity.SEVERE, AlertSeverity.MODERATE, AlertSeverity.MINOR),
+        ),
+    )
+
+    fun alertsFor(id: String?, now: Long): List<WeatherAlert>? {
+        val preset = alertPresets.firstOrNull { it.id == id && it.id != OFF } ?: return null
+        return preset.severities.map { severity ->
+            val name = severity.name.lowercase().replaceFirstChar { it.uppercase() }
+            WeatherAlert(
+                id = "sim_${severity.name}",
+                event = "$name weather alert",
+                headline = "$name weather alert in effect for your area",
+                severity = severity,
+                description = "Simulated ${severity.name.lowercase()} alert for testing how alerts are shown.",
+                effectiveMillis = now,
+                expiresMillis = now + 6 * 60 * 60_000L,
+            )
+        }
+    }
 
     val presets = listOf(
         WeatherSimulationPreset(OFF, "Off", WeatherEffectSpec.None),

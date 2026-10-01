@@ -1,7 +1,7 @@
 # Overcast ☁️
+<img width="100" height="100" alt="ic_playstore" src="https://github.com/user-attachments/assets/2f3e9b3f-6d22-48f4-af5c-91d9a1723258" />
 
-Weather is also Essential
-
+Weather is also Essential.
 An immersive weather app for Android built with Material 3 Expressive. Further integrate with [Essentials](https://github.com/sameerasw/essentials) island and brief.
 
 <p align="center">

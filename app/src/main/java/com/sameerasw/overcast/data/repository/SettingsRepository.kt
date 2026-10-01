@@ -14,6 +14,8 @@ class SettingsRepository(
     companion object {
         const val PREFS_NAME = "overcast_prefs"
 
+        const val KEY_DEVELOPER_MODE_ENABLED = "developer_mode_enabled"
+
         const val KEY_WEATHER_PROVIDER = "weather_provider"
         const val KEY_WEATHER_API_KEY = "weather_api_key"
         const val KEY_WEATHER_OPENMETEO_MODEL = "weather_openmeteo_model"
@@ -46,6 +48,9 @@ class SettingsRepository(
     fun putString(key: String, value: String?) = prefs.edit().putString(key, value).apply()
 
     fun putInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
+
+    fun isDeveloperModeEnabled(): Boolean = getBoolean(KEY_DEVELOPER_MODE_ENABLED, false)
+    fun setDeveloperModeEnabled(enabled: Boolean) = putBoolean(KEY_DEVELOPER_MODE_ENABLED, enabled)
 
     fun isWeatherEffectsEnabled(): Boolean = getBoolean(KEY_WEATHER_EFFECTS, true)
     fun setWeatherEffectsEnabled(enabled: Boolean) = putBoolean(KEY_WEATHER_EFFECTS, enabled)

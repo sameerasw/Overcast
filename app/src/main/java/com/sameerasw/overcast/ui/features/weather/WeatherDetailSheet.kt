@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -78,6 +79,11 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.SplitButtonLayout
+import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -316,81 +322,97 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                     var topPx by headerBottom
                     val topFadePx = if (topPx > 0f) topPx + with(density) { 40.dp.toPx() } else 0f
                     val bottomFadePx = WindowInsets.navigationBars.getBottom(density) + with(density) { 20.dp.toPx() }
-                    Box(Modifier.fillMaxSize().nestedScroll(connection)) {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                                .drawWithContent {
-                                    drawContent()
-                                    if (topFadePx > 0f) {
+                    val pullState = rememberPullToRefreshState()
+                    PullToRefreshBox(
+                        isRefreshing = state.loading,
+                        onRefresh = {
+                            HapticUtil.performVirtualKeyHaptic(view)
+                            scope.launch { WeatherRepository.refresh(context, force = true) }
+                        },
+                        state = pullState,
+                        indicator = {
+                            PullToRefreshDefaults.LoadingIndicator(
+                                state = pullState,
+                                isRefreshing = state.loading,
+                                containerColor = palette.glowSecondary,
+                                color = palette.accent,
+                                maxDistance = PullToRefreshDefaults.IndicatorMaxDistance +
+                                    with(density) { WindowInsets.statusBars.getTop(density).toDp() },
+                                modifier = Modifier.align(Alignment.TopCenter),
+                            )
+                        },
+                    ) {
+                        Box(Modifier.fillMaxSize().nestedScroll(connection)) {
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                    .drawWithContent {
+                                        drawContent()
+                                        if (topFadePx > 0f) {
+                                            drawRect(
+                                                brush = Brush.verticalGradient(
+                                                    colors = listOf(Color.Transparent, Color.Black),
+                                                    startY = 0f,
+                                                    endY = topFadePx,
+                                                ),
+                                                blendMode = BlendMode.DstIn,
+                                            )
+                                        }
                                         drawRect(
                                             brush = Brush.verticalGradient(
-                                                colors = listOf(Color.Transparent, Color.Black),
-                                                startY = 0f,
-                                                endY = topFadePx,
+                                                colors = listOf(Color.Black, Color.Transparent),
+                                                startY = size.height - bottomFadePx,
+                                                endY = size.height,
                                             ),
+                                            topLeft = Offset(0f, size.height - bottomFadePx),
+                                            size = Size(size.width, bottomFadePx),
                                             blendMode = BlendMode.DstIn,
                                         )
                                     }
-                                    drawRect(
-                                        brush = Brush.verticalGradient(
-                                            colors = listOf(Color.Black, Color.Transparent),
-                                            startY = size.height - bottomFadePx,
-                                            endY = size.height,
-                                        ),
-                                        topLeft = Offset(0f, size.height - bottomFadePx),
-                                        size = Size(size.width, bottomFadePx),
-                                        blendMode = BlendMode.DstIn,
+                                    .progressiveBlur(blurRadius = 40f, height = topFadePx, direction = BlurDirection.TOP, showGradientOverlay = false)
+                                    .progressiveBlur(blurRadius = 14f, height = bottomFadePx, direction = BlurDirection.BOTTOM, showGradientOverlay = false),
+                            ) {
+                                Column(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(scrollState)
+                                        .padding(top = with(density) { topPx.toDp() } + 28.dp)
+                                        .navigationBarsPadding()
+                                        .padding(bottom = 40.dp),
+                                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                                ) {
+                                    snapshot.activeAlerts().sortedByDescending { it.severity.ordinal }
+                                        .forEach { AlertCard(it, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
+                                    HourlySection(snapshot, unit, palette)
+                                    snapshot.daily.orEmpty().takeIf { it.isNotEmpty() }
+                                        ?.let { DailySection(it, unit, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
+                                    DetailsSection(snapshot, unit, palette, Modifier.padding(horizontal = SIDE_PADDING))
+                                    SunSection(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
+                                    Footer(
+                                        modifier = Modifier.padding(horizontal = SIDE_PADDING),
+                                        snapshot = snapshot,
+                                        error = state.error,
+                                        palette = palette,
+                                        onOpenSettings = onOpenSettings,
                                     )
                                 }
-                                .progressiveBlur(blurRadius = 40f, height = topFadePx, direction = BlurDirection.TOP, showGradientOverlay = false)
-                                .progressiveBlur(blurRadius = 14f, height = bottomFadePx, direction = BlurDirection.BOTTOM, showGradientOverlay = false),
-                        ) {
+                            }
                             Column(
                                 Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(scrollState)
-                                    .padding(top = with(density) { topPx.toDp() } + 28.dp)
-                                    .navigationBarsPadding()
-                                    .padding(bottom = 40.dp),
-                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                    .align(Alignment.TopCenter)
+                                    .fillMaxWidth()
+                                    .onSizeChanged { topPx = it.height.toFloat() }
+                                    .statusBarsPadding(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                snapshot.activeAlerts().sortedByDescending { it.severity.ordinal }
-                                    .forEach { AlertCard(it, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
-                                HourlySection(snapshot, unit, palette)
-                                snapshot.daily.orEmpty().takeIf { it.isNotEmpty() }
-                                    ?.let { DailySection(it, unit, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
-                                DetailsSection(snapshot, unit, palette, Modifier.padding(horizontal = SIDE_PADDING))
-                                SunSection(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
-                                Footer(
-                                    modifier = Modifier.padding(horizontal = SIDE_PADDING),
-                                    snapshot = snapshot,
-                                    loading = state.loading,
-                                    error = state.error,
-                                    palette = palette,
-                                    onRefresh = {
-                                        HapticUtil.performVirtualKeyHaptic(view)
-                                        scope.launch { WeatherRepository.refresh(context, force = true) }
-                                    },
-                                )
-                                SettingsButton(palette, onOpenSettings, Modifier.padding(horizontal = SIDE_PADDING))
+                                val progress = collapse.floatValue
+                                Spacer(Modifier.height(14.dp))
+                                Box(Modifier.foldAway(((progress - 0.25f) / 0.5f).coerceIn(0f, 1f))) {
+                                    LocationChip(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
+                                }
+                                Header(snapshot, unit, palette, progress, Modifier.padding(horizontal = SIDE_PADDING))
                             }
-                        }
-                        Column(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                .onSizeChanged { topPx = it.height.toFloat() }
-                                .statusBarsPadding(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            val progress = collapse.floatValue
-                            Spacer(Modifier.height(14.dp))
-                            Box(Modifier.foldAway(((progress - 0.25f) / 0.5f).coerceIn(0f, 1f))) {
-                                LocationChip(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
-                            }
-                            Header(snapshot, unit, palette, progress, Modifier.padding(horizontal = SIDE_PADDING))
                         }
                     }
                 }
@@ -836,12 +858,12 @@ private fun SunTile(label: Int, time: String, palette: WeatherPalette, modifier:
 private fun Footer(
     modifier: Modifier,
     snapshot: WeatherSnapshot,
-    loading: Boolean,
     error: WeatherError?,
     palette: WeatherPalette,
-    onRefresh: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(snapshot.updatedAt) {
         while (true) {
@@ -855,27 +877,57 @@ private fun Footer(
         DateUtils.MINUTE_IN_MILLIS,
         DateUtils.FORMAT_ABBREV_RELATIVE,
     ).toString()
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = error?.let { errorLabel(context, it) } ?: "${WeatherProviders.byId(snapshot.providerId).displayName} - $age",
-            color = palette.onBaseMuted,
-            style = MaterialTheme.typography.labelLarge,
-            textAlign = TextAlign.End,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        if (loading) {
-            LoadingIndicator(Modifier.size(28.dp))
-        } else {
-            Icon(
-                painterResource(R.drawable.rounded_refresh_24),
-                contentDescription = null,
-                tint = palette.onBase,
-                modifier = Modifier.clip(CircleShape).clickable(onClick = onRefresh).padding(8.dp).size(20.dp),
-            )
-        }
-    }
+    val colors = ButtonDefaults.buttonColors(containerColor = palette.card, contentColor = palette.onBase)
+    val height = SplitButtonDefaults.MediumContainerHeight
+    SplitButtonLayout(
+        modifier = modifier.fillMaxWidth(),
+        leadingButton = {
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(height),
+                shape = SplitButtonDefaults.leadingButtonShapesFor(height).shape,
+                color = palette.card,
+                contentColor = palette.onBase,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = error?.let { errorLabel(context, it) } ?: WeatherProviders.byId(snapshot.providerId).displayName,
+                        color = palette.accent,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(R.string.weather_updated_at, age),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.onBaseMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        },
+        trailingButton = {
+            SplitButtonDefaults.TrailingButton(
+                onClick = {
+                    HapticUtil.performVirtualKeyHaptic(view)
+                    onOpenSettings()
+                },
+                shapes = SplitButtonDefaults.trailingButtonShapesFor(height),
+                colors = colors,
+                contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(height),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.rounded_settings_24),
+                    contentDescription = stringResource(R.string.weather_open_settings),
+                    tint = palette.accent,
+                    modifier = Modifier.size(SplitButtonDefaults.trailingButtonIconSizeFor(height)),
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -923,6 +975,6 @@ private fun formatTime(context: Context, millis: Long): String {
 }
 
 private fun formatHour(context: Context, millis: Long): String {
-    val pattern = if (DateFormat.is24HourFormat(context)) "HH" else "ha"
+    val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "ha"
     return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(millis)).lowercase(Locale.getDefault())
 }

@@ -36,6 +36,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -555,58 +559,93 @@ private fun Header(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: We
     
     val heightCap = ((screenHeightDp * 0.6f - HEADER_EXTRAS_DP) / 0.86f / fontScale).coerceAtLeast(64f)
     val expanded = minOf(if (number.length >= 3) 290f else 390f, heightCap)
-    val size = lerp(expanded, 44f, progress).sp
-    
     val font = temperatureFont(lerp(52f, 125f, progress).roundToInt(), lerp(1f, 800f, progress).roundToInt())
+    val letterSpacing = lerp(-14f, -1f, progress)
+    val textMeasurer = rememberTextMeasurer()
     val hazeStrength = ((snapshot.tempC - 30.0) / 12.0).toFloat().coerceIn(0f, 1f) * (1f - progress * 5f).coerceIn(0f, 1f)
     var combined by remember { mutableStateOf(false) }
     if (progress >= COMBINE_AT) combined = true else if (progress < COMBINE_AT - 0.08f) combined = false
     val morph by animateFloatAsState(if (combined) 1f else 0f, tween(320), label = "weatherHeaderMorph")
-    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(Modifier.height(lerp(20f, 0f, progress).dp))
-        TemperatureAndCondition(
-            progress = morph,
-            gap = lerp(4f, 16f, morph).dp,
-            digits = {
-                Row(verticalAlignment = Alignment.Top, modifier = Modifier.heatHaze(hazeStrength)) {
-                    DegreeSign(size, font, Color.Transparent)
-                    Text(
-                        number,
-                        color = palette.onBase,
-                        fontFamily = font,
-                        fontSize = size,
-                        lineHeight = size * 0.86f,
-                        letterSpacing = lerp(-14f, -1f, progress).sp,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                    DegreeSign(size, font, palette.onBase)
-                }
-            },
-            condition = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(
-                        painterResource(WeatherFormat.icon(snapshot.condition, snapshot.isDay)),
-                        contentDescription = null,
-                        tint = palette.accent,
-                        modifier = Modifier.size(32.dp),
-                    )
-                    Text(snapshot.conditionText, color = palette.onBase, style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            },
-        )
-        Column(Modifier.foldAway((progress / 0.5f).coerceIn(0f, 1f))) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                listOf(
-                    stringResource(R.string.weather_high_low, WeatherFormat.temperature(snapshot.highC, unit), WeatherFormat.temperature(snapshot.lowC, unit)),
-                    stringResource(R.string.weather_feels_like, WeatherFormat.temperature(snapshot.feelsLikeC, unit)),
-                ).joinToString(" · "),
-                color = palette.onBaseMuted,
-                style = MaterialTheme.typography.bodyLarge,
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val size = fitDigitSize(textMeasurer, number, font, letterSpacing, lerp(expanded, 44f, progress), constraints.maxWidth * DIGITS_MAX_WIDTH_FRACTION).sp
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(lerp(20f, 0f, progress).dp))
+            TemperatureAndCondition(
+                progress = morph,
+                gap = lerp(4f, 16f, morph).dp,
+                digits = {
+                    Row(verticalAlignment = Alignment.Top, modifier = Modifier.heatHaze(hazeStrength)) {
+                        DegreeSign(size, font, Color.Transparent)
+                        Text(
+                            number,
+                            color = palette.onBase,
+                            fontFamily = font,
+                            fontSize = size,
+                            lineHeight = size * 0.86f,
+                            letterSpacing = letterSpacing.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                        DegreeSign(size, font, palette.onBase)
+                    }
+                },
+                condition = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(
+                            painterResource(WeatherFormat.icon(snapshot.condition, snapshot.isDay)),
+                            contentDescription = null,
+                            tint = palette.accent,
+                            modifier = Modifier.size(32.dp),
+                        )
+                        Text(snapshot.conditionText, color = palette.onBase, style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                },
             )
+            Column(Modifier.foldAway((progress / 0.5f).coerceIn(0f, 1f))) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    listOf(
+                        stringResource(R.string.weather_high_low, WeatherFormat.temperature(snapshot.highC, unit), WeatherFormat.temperature(snapshot.lowC, unit)),
+                        stringResource(R.string.weather_feels_like, WeatherFormat.temperature(snapshot.feelsLikeC, unit)),
+                    ).joinToString(" · "),
+                    color = palette.onBaseMuted,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         }
     }
+}
+
+private const val DIGITS_MAX_WIDTH_FRACTION = 0.95f
+
+private fun fitDigitSize(
+    measurer: TextMeasurer,
+    number: String,
+    font: FontFamily,
+    letterSpacing: Float,
+    sizeSp: Float,
+    maxWidthPx: Float,
+): Float {
+    if (maxWidthPx <= 0f) return sizeSp
+    var size = sizeSp
+    repeat(3) {
+        val digits = measurer.measure(
+            number,
+            TextStyle(fontFamily = font, fontSize = size.sp, letterSpacing = letterSpacing.sp),
+            maxLines = 1,
+            softWrap = false,
+        ).size.width
+        val degree = measurer.measure(
+            "\u00b0",
+            TextStyle(fontFamily = font, fontSize = (size * 0.42f).sp),
+            maxLines = 1,
+            softWrap = false,
+        ).size.width
+        val total = digits + 2 * degree
+        if (total <= maxWidthPx) return size
+        size *= maxWidthPx / total
+    }
+    return size
 }
 
 @Composable

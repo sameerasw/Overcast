@@ -12,7 +12,6 @@ package com.sameerasw.overcast.ui.features.weather
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.text.format.DateFormat
 import androidx.compose.foundation.clickable
@@ -24,10 +23,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -68,7 +65,6 @@ import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
 import com.sameerasw.overcast.ui.core.pickers.SegmentedPicker
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherRepository
-import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.location.DeviceLocationSource
 import com.sameerasw.overcast.weather.model.CityResult
 import com.sameerasw.overcast.weather.model.WeatherError
@@ -77,7 +73,6 @@ import com.sameerasw.overcast.weather.provider.WeatherProviderException
 import com.sameerasw.overcast.weather.provider.WeatherProviders
 import kotlinx.coroutines.launch
 import java.util.Date
-import androidx.compose.runtime.DisposableEffect
 
 
 private val REFRESH_OPTIONS = listOf(30, 60, 120, 180, 360)
@@ -95,18 +90,6 @@ fun WeatherSettingsUI(
     val provider = WeatherProviders.byId(providerId)
     val weatherState by WeatherRepository.state.collectAsState()
 
-    var experimental by remember { mutableStateOf(settings.isWeatherExperimentalEnabled()) }
-    var simulatedWeather by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_WEATHER, WeatherSimulation.OFF) ?: WeatherSimulation.OFF) }
-    var simulatedTime by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_TIME, "auto") ?: "auto") }
-    var simulatedTemp by remember { mutableStateOf(settings.getString(SettingsRepository.KEY_DEBUG_SIMULATED_TEMP, "auto") ?: "auto") }
-    DisposableEffect(context) {
-        val prefs = context.getSharedPreferences(SettingsRepository.PREFS_NAME, Context.MODE_PRIVATE)
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == SettingsRepository.KEY_DEBUG_WEATHER_EXPERIMENTAL) experimental = settings.isWeatherExperimentalEnabled()
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
     var units by remember { mutableStateOf(settings.getWeatherUnits()) }
@@ -470,59 +453,6 @@ fun WeatherSettingsUI(
                     }
                 }
             }
-
-        if (experimental) {
-            SectionTitle(R.string.weather_section_experimental)
-            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
-                ConfigPickerItem(
-                    title = stringResource(R.string.dev_simulate_weather_title),
-                    iconRes = R.drawable.rounded_partly_cloudy_day_24,
-                    selectedValue = WeatherSimulation.presets.firstOrNull { it.id == simulatedWeather }?.label.orEmpty(),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    WeatherSimulation.presets.forEach { preset ->
-                        SegmentedDropdownMenuItem(
-                            text = { Text(preset.label) },
-                            onClick = {
-                                HapticUtil.performVirtualKeyHaptic(view)
-                                simulatedWeather = preset.id
-                                settings.putString(SettingsRepository.KEY_DEBUG_SIMULATED_WEATHER, preset.id)
-                            },
-                        )
-                    }
-                }
-                SegmentedPicker(
-                    items = listOf("auto", "dawn", "day", "dusk", "night"),
-                    selectedItem = simulatedTime,
-                    onItemSelected = {
-                        simulatedTime = it
-                        settings.putString(SettingsRepository.KEY_DEBUG_SIMULATED_TIME, it)
-                    },
-                    labelProvider = {
-                        context.getString(
-                            when (it) {
-                                "dawn" -> R.string.weather_sim_time_dawn
-                                "day" -> R.string.weather_sim_time_day
-                                "dusk" -> R.string.weather_sim_time_dusk
-                                "night" -> R.string.weather_sim_time_night
-                                else -> R.string.weather_sim_time_auto
-                            },
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                SegmentedPicker(
-                    items = listOf("auto", "-15", "5", "22", "38", "50"),
-                    selectedItem = simulatedTemp,
-                    onItemSelected = {
-                        simulatedTemp = it
-                        settings.putString(SettingsRepository.KEY_DEBUG_SIMULATED_TEMP, it)
-                    },
-                    labelProvider = { if (it == "auto") context.getString(R.string.weather_sim_time_auto) else "$it°" },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
     }
 }
 

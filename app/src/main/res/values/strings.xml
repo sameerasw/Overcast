@@ -44,7 +44,6 @@
     <string name="weather_search_city">Search for a city</string>
     <string name="weather_search_no_results">No cities found</string>
     <string name="weather_section_display">Display</string>
-    <string name="weather_section_experimental">Experimental</string>
     <string name="weather_section_source">Source</string>
     <string name="weather_sim_time_auto">Auto</string>
     <string name="weather_sim_time_dawn">Dawn</string>
@@ -77,7 +76,6 @@
     <string name="action_license">License</string>
     <string name="action_source_code">Source Code</string>
     <string name="action_view_on_github">View on GitHub</string>
-    <string name="dev_weather_experimental_title">Weather experiments</string>
     <string name="action_back">Back</string>
     <string name="app_description">Beautiful, detailed weather for your Android</string>
     <string name="licenses_credits_subtitle">Open source projects powering Overcast</string>

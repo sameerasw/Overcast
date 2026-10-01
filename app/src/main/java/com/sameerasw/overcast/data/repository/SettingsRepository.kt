@@ -25,7 +25,6 @@ class SettingsRepository(
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
-        const val KEY_DEBUG_WEATHER_EXPERIMENTAL = "debug_weather_experimental"
         const val KEY_DEBUG_SIMULATED_WEATHER = "debug_simulated_weather"
         const val KEY_DEBUG_SIMULATED_TIME = "debug_simulated_time"
         const val KEY_DEBUG_SIMULATED_TEMP = "debug_simulated_temp"
@@ -61,7 +60,7 @@ class SettingsRepository(
     fun getWeatherProvider(): String? = getString(KEY_WEATHER_PROVIDER, null)
     fun setWeatherProvider(id: String) = putString(KEY_WEATHER_PROVIDER, id)
 
-    fun isWeatherExperimentalEnabled(): Boolean = getBoolean(KEY_DEBUG_WEATHER_EXPERIMENTAL, false)
+    fun isWeatherExperimentalEnabled(): Boolean = isDeveloperModeEnabled()
 
     fun getSimulatedWeather(): WeatherSimulationPreset? =
         if (isWeatherExperimentalEnabled()) {

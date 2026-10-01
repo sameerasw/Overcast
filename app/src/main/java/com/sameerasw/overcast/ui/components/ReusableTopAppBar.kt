@@ -29,11 +29,14 @@ fun ReusableTopAppBar(
     title: Int,
     onBackClick: (() -> Unit)? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = Color.Transparent,
 ) {
     val view = LocalView.current
     LargeFlexibleTopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = containerColor),
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = containerColor,
+            scrolledContainerColor = containerColor,
+        ),
         modifier = Modifier.padding(horizontal = 8.dp),
         expandedHeight = 120.dp,
         collapsedHeight = TopAppBarDefaults.LargeAppBarCollapsedHeight,

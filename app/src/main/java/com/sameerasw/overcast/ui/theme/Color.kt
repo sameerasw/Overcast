@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2026 sameerasw.com
+ * License: MIT License
+ *
+ * Feature Module: UI Module
+ * File: Color.kt
+ * Description: UI layout element for Color.kt.
+ */
+
 package com.sameerasw.overcast.ui.theme
 
 import androidx.compose.ui.graphics.Color

@@ -87,4 +87,8 @@
     <string name="weather_place_remove_saved">Remove from saved</string>
     <string name="weather_place_remove_recent">Remove</string>
     <string name="weather_choose_location">Choose a location</string>
+    <string name="permlab_read_weather">Read weather data</string>
+    <string name="permdesc_read_weather">Lets the app read the latest weather for your current or saved location from Overcast.</string>
+    <string name="permgrouplab_weather">Weather</string>
+    <string name="permgroupdesc_weather">access weather data from Overcast</string>
 </resources>

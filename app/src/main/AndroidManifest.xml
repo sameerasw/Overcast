@@ -8,6 +8,20 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <permission-group
+        android:name="com.sameerasw.overcast.permission-group.WEATHER"
+        android:description="@string/permgroupdesc_weather"
+        android:icon="@drawable/rounded_partly_cloudy_day_24"
+        android:label="@string/permgrouplab_weather" />
+
+    <permission
+        android:name="com.sameerasw.overcast.permission.READ_WEATHER"
+        android:description="@string/permdesc_read_weather"
+        android:icon="@drawable/rounded_partly_cloudy_day_24"
+        android:label="@string/permlab_read_weather"
+        android:permissionGroup="com.sameerasw.overcast.permission-group.WEATHER"
+        android:protectionLevel="dangerous" />
+
     <application
         android:name=".OvercastApp"
         android:allowBackup="true"
@@ -36,6 +50,12 @@
             android:exported="false"
             android:label="@string/settings_activity_label"
             android:theme="@style/Theme.Overcast" />
+
+        <provider
+            android:name=".weather.share.WeatherContentProvider"
+            android:authorities="com.sameerasw.overcast.weather"
+            android:exported="true"
+            android:permission="com.sameerasw.overcast.permission.READ_WEATHER" />
     </application>
 
 </manifest>

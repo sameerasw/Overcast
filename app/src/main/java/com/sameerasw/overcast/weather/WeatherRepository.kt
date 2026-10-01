@@ -5,6 +5,7 @@ import androidx.annotation.Keep
 import com.google.gson.Gson
 import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.weather.location.DeviceLocationSource
+import com.sameerasw.overcast.weather.location.WeatherPlaces
 import com.sameerasw.overcast.weather.model.WeatherError
 import com.sameerasw.overcast.weather.model.WeatherLocation
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
@@ -66,7 +67,7 @@ object WeatherRepository {
     }
 
     // Returns true when fresh data was stored.
-    suspend fun refresh(context: Context, force: Boolean = false): Boolean {
+    suspend fun refresh(context: Context, force: Boolean = false, fallbackToSaved: Boolean = false): Boolean {
         val app = context.applicationContext
         ensureLoaded(app)
         return mutex.withLock {
@@ -82,6 +83,7 @@ object WeatherRepository {
             }
             _state.update { it.copy(loading = true) }
             val location = resolveLocation(app, config)
+                ?: if (fallbackToSaved) savedFallback(app) else null
             if (location == null) {
                 val error = if (config.locationMode == WeatherLocationMode.DEVICE && !DeviceLocationSource.hasPermission(app)) {
                     WeatherError.LocationPermission
@@ -135,6 +137,9 @@ object WeatherRepository {
             fresh
         }
     }
+
+    private fun savedFallback(context: Context): WeatherLocation? =
+        WeatherPlaces(context).saved().firstOrNull()?.let { WeatherLocation(it.latitude, it.longitude, it.name) }
 
     private suspend fun resolveLocation(context: Context, config: WeatherConfig): WeatherLocation? =
         when (config.locationMode) {

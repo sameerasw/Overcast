@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.sameerasw.overcast.utils.CompatibilityMode
 import com.sameerasw.overcast.utils.DeviceUtils
 
 enum class BlurDirection {
@@ -51,7 +52,7 @@ fun Modifier.progressiveBlur(
         val blurRadiusDp = with(density) { blurRadius.toDp() }
 
         val blurModifier =
-            if (blurRadius > 0f && !isPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (blurRadius > 0f && !isPowerSave && !CompatibilityMode.enabled.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Modifier.blur {
                     this.edgeTreatment = edgeTreatment
                     val sizeHeightPx = size.height.toPx()
@@ -138,7 +139,7 @@ fun Modifier.progressiveBlur(
         val isPowerSave = remember(context) { DeviceUtils.isPowerSaveMode(context) }
 
         val blurModifier =
-            if (maxRadius > 0.dp && !isPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (maxRadius > 0.dp && !isPowerSave && !CompatibilityMode.enabled.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Modifier.blur {
                     this.edgeTreatment = edgeTreatment
                     radius =

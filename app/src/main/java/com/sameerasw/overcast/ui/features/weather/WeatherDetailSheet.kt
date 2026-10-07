@@ -7,6 +7,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.layout.Layout
@@ -107,6 +108,7 @@ import androidx.compose.ui.unit.sp
 import com.sameerasw.overcast.R
 import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.utils.DeviceUtils
+import com.sameerasw.overcast.utils.CompatibilityMode
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherFormat
 import com.sameerasw.overcast.weather.WeatherRepository
@@ -236,8 +238,9 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
             effectsGo = true
         }
     }
-    val contentAlpha by animateFloatAsState(if (hasSnapshot) 1f else 0f, tween(CONTENT_FADE_MS), label = "contentAlpha")
-    val effectRamp by animateFloatAsState(if (effectsGo) 1f else 0f, tween(EFFECTS_FADE_MS, easing = LinearOutSlowInEasing), label = "effectRamp")
+    val compatibility = CompatibilityMode.enabled.value
+    val contentAlpha by animateFloatAsState(if (hasSnapshot) 1f else 0f, if (compatibility) snap() else tween(CONTENT_FADE_MS), label = "contentAlpha")
+    val effectRamp by animateFloatAsState(if (effectsGo) 1f else 0f, if (compatibility) snap() else tween(EFFECTS_FADE_MS, easing = LinearOutSlowInEasing), label = "effectRamp")
 
     LaunchedEffect(Unit) {
         WeatherRepository.ensureLoaded(context)
@@ -295,7 +298,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         val glassRain = effectSpec.layers.filterIsInstance<WeatherEffectLayer.Rain>().maxByOrNull { it.intensity }.takeUnless { sheetOpen }
         val density = LocalDensity.current
         val collapse = remember { mutableFloatStateOf(0f) }
-        val scrollTick = remember { intArrayOf(0) }
+        val scrollTick = remember { mutableIntStateOf(0) }
         val sky = snapshot?.let { skyState(it, now) }
         val skyHeightPx = with(density) { SKY_HEIGHT.toPx() }
         val collapseShiftPx = with(density) { 60.dp.toPx() }
@@ -353,7 +356,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             }
                         },
                         cover = { rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) } },
-                        scrollTick = { scrollTick[0] },
+                        scrollTick = { scrollTick.intValue },
                     )
                 }
                 val scrollState = rememberScrollState()
@@ -361,7 +364,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                 val connection = remember(maxCollapsePx) {
                     object : NestedScrollConnection {
                         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                            if (available.y != 0f) scrollTick[0]++
+                            if (available.y != 0f) scrollTick.intValue++
                             if (available.y >= 0f || collapse.floatValue >= 1f) return Offset.Zero
                             val next = (collapse.floatValue - available.y / maxCollapsePx).coerceIn(0f, 1f)
                             val consumed = -(next - collapse.floatValue) * maxCollapsePx

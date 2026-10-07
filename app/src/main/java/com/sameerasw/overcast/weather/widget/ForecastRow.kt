@@ -75,6 +75,7 @@ internal fun ForecastRow(
     width: Dp,
     height: Dp,
     modifier: GlanceModifier = GlanceModifier,
+    gap: Dp = 3.dp,
 ) {
     val context = LocalContext.current
     val resources = context.resources
@@ -118,14 +119,14 @@ internal fun ForecastRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Image(provider = ImageProvider(labelBitmap), contentDescription = item.label)
-                Spacer(GlanceModifier.height(3.dp))
+                Spacer(GlanceModifier.height(gap))
                 Image(
                     provider = ImageProvider(item.icon),
                     contentDescription = null,
                     colorFilter = if (tintable) ColorFilter.tint(textColor) else null,
                     modifier = GlanceModifier.size(iconSize),
                 )
-                Spacer(GlanceModifier.height(3.dp))
+                Spacer(GlanceModifier.height(gap))
                 Image(
                     provider = ImageProvider(primaryBitmap),
                     contentDescription = item.primary,

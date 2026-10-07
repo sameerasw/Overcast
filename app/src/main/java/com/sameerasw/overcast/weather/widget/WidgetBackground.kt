@@ -42,8 +42,15 @@ class WidgetConfigStore(context: Context) {
         prefs.edit().putString("forecast_$appWidgetId", forecast.id).apply()
     }
 
+    
+    fun spacing(appWidgetId: Int): Float? = prefs.getFloat("spacing_$appWidgetId", Float.NaN).takeUnless { it.isNaN() }
+
+    fun setSpacing(appWidgetId: Int, spacing: Float) {
+        prefs.edit().putFloat("spacing_$appWidgetId", spacing).apply()
+    }
+
     fun remove(appWidgetId: Int) {
-        prefs.edit().remove(key(appWidgetId)).remove("forecast_$appWidgetId").apply()
+        prefs.edit().remove(key(appWidgetId)).remove("forecast_$appWidgetId").remove("spacing_$appWidgetId").apply()
     }
 
     private fun key(appWidgetId: Int) = "background_$appWidgetId"

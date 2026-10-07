@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.height
@@ -23,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,10 +44,13 @@ import com.sameerasw.overcast.ui.core.pickers.SegmentedPicker
 import com.sameerasw.overcast.ui.theme.OvercastTheme
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
+import com.sameerasw.overcast.weather.widget.defaultWidgetSpacing
+import com.sameerasw.overcast.weather.widget.WIDGET_SPACING_MAX
 import com.sameerasw.overcast.weather.widget.WidgetBackground
 import com.sameerasw.overcast.weather.widget.WidgetConfigStore
 import com.sameerasw.overcast.weather.widget.WidgetForecast
 import com.sameerasw.overcast.weather.widget.WeatherWidgetReceiver
+import kotlin.math.roundToInt
 
 class WeatherWidgetConfigActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +75,8 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                 val store = remember { WidgetConfigStore(context) }
                 var selected by remember { mutableStateOf(store.background(appWidgetId)) }
                 var forecast by remember { mutableStateOf(store.forecast(appWidgetId)) }
+                
+                var spacing by remember { mutableStateOf(store.spacing(appWidgetId)) }
                 val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
                 Scaffold(
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -85,6 +92,7 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                                         HapticUtil.performVirtualKeyHaptic(view)
                                         store.setBackground(appWidgetId, selected)
                                         if (supportsForecast) store.setForecast(appWidgetId, forecast)
+                                        spacing?.let { store.setSpacing(appWidgetId, it) }
                                         WeatherWidgetUpdater.updateAll(context)
                                         setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
                                         finish()
@@ -129,6 +137,26 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                             }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        SectionTitle(R.string.widget_config_section_spacing)
+                        RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
+                            Slider(
+                                value = spacing ?: defaultWidgetSpacing(selected),
+                                onValueChange = {
+                                    
+                                    val stepped = it.roundToInt().toFloat()
+                                    if (stepped != (spacing ?: defaultWidgetSpacing(selected))) HapticUtil.performSliderHaptic(view)
+                                    spacing = stepped
+                                },
+                                onValueChangeFinished = { HapticUtil.performLightHaptic(view) },
+                                valueRange = 0f..WIDGET_SPACING_MAX,
+                                steps = WIDGET_SPACING_MAX.toInt() - 1,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surfaceBright)
+                                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                            )
                         }
                     }
                 }

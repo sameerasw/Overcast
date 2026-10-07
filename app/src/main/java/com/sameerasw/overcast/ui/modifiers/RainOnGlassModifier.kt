@@ -3,6 +3,7 @@ package com.sameerasw.overcast.ui.modifiers
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import com.sameerasw.overcast.utils.CompatibilityMode
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,7 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 
 @Composable
 fun Modifier.rainOnGlass(intensity: Float, slant: Float, light: () -> Offset): Modifier {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || intensity <= 0f) return this
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || CompatibilityMode.enabled.value || intensity <= 0f) return this
     return RainOnGlassApi33.apply(this, intensity.coerceIn(0f, 1f), slant, LocalDensity.current.density, light)
 }
 

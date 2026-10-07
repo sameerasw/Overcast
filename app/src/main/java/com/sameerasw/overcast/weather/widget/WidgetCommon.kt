@@ -26,7 +26,15 @@ import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 
 internal val WIDGET_CORNER: Dp = 28.dp
 
-internal fun widgetPadding(mode: WidgetBackground): Dp = if (mode == WidgetBackground.NONE) 8.dp else 14.dp
+const val WIDGET_SPACING_MAX = 32f
+
+
+fun defaultWidgetSpacing(mode: WidgetBackground): Float = if (mode == WidgetBackground.NONE) 8f else 14f
+
+internal fun widgetPadding(mode: WidgetBackground): Dp = defaultWidgetSpacing(mode).dp
+
+internal fun resolveSpacing(context: android.content.Context, appWidgetId: Int, mode: WidgetBackground): Dp =
+    (WidgetConfigStore(context).spacing(appWidgetId) ?: defaultWidgetSpacing(mode)).dp
 
 @Composable
 internal fun widgetTextColor(mode: WidgetBackground): ColorProvider =

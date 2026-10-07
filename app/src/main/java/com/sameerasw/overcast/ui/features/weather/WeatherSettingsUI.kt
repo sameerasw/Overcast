@@ -92,6 +92,7 @@ fun WeatherSettingsUI(
     val provider = WeatherProviders.byId(providerId)
     val weatherState by WeatherRepository.state.collectAsState()
 
+    var compatibility by remember { mutableStateOf(settings.isCompatibilityMode()) }
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
     var refreshMinutes by remember { mutableIntStateOf(settings.getWeatherRefreshMinutes()) }
@@ -332,6 +333,16 @@ fun WeatherSettingsUI(
                         )
                     }
                 }
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_speed_24,
+                    title = stringResource(R.string.compatibility_mode_title),
+                    isChecked = compatibility,
+                    onCheckedChange = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        compatibility = it
+                        settings.setCompatibilityMode(it)
+                    },
+                )
                 IconToggleItem(
                     iconRes = R.drawable.rounded_rainy_24,
                     title = stringResource(R.string.weather_effects_title),

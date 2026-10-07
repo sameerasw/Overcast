@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -88,9 +89,10 @@ private fun HourlyRoot() {
     val weather by WidgetHub.weather.collectAsState()
     val revision by WidgetHub.revision.collectAsState()
     val mode = remember(revision) { WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(glanceId)) }
+    val spacing = remember(revision, mode) { resolveSpacing(context, GlanceAppWidgetManager(context).getAppWidgetId(glanceId), mode) }
     val current = weather ?: return
     val items = remember(current) { hourlyItems(context, current) }
-    HourlyContent(items, current.style.tintable, context.getString(R.string.widget_weather_empty), mode, current)
+    HourlyContent(items, current.style.tintable, context.getString(R.string.widget_weather_empty), mode, current, spacing)
 }
 
 @Composable
@@ -100,12 +102,13 @@ private fun HourlyContent(
     emptyText: String,
     mode: WidgetBackground,
     weather: WidgetWeather?,
+    spacing: Dp = widgetPadding(mode),
     background: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
     val size = LocalSize.current
     val density = context.resources.displayMetrics.density
-    val padding = widgetPadding(mode)
+    val padding = spacing
     val shadow = mode == WidgetBackground.NONE
 
     WidgetSurface(mode, weather, background) {
@@ -131,6 +134,7 @@ private fun HourlyContent(
                 mode = mode,
                 width = size.width - padding * 2,
                 height = size.height - padding * 2,
+                gap = spacing * 0.35f,
                 modifier = GlanceModifier.fillMaxSize().padding(padding),
             )
         }

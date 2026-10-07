@@ -66,6 +66,7 @@
     <string name="widget_config_title">Widget background</string>
     <string name="widget_config_section_background">Background</string>
     <string name="widget_config_section_forecast">Forecast</string>
+    <string name="widget_config_section_spacing">Spacing</string>
     <string name="widget_forecast_off">Off</string>
     <string name="widget_forecast_hourly">Hourly</string>
     <string name="widget_forecast_daily">Daily</string>
@@ -73,6 +74,7 @@
     <string name="widget_bg_ambient">Ambient</string>
     <string name="widget_bg_material">Material</string>
     <string name="widget_weather_empty">Open Overcast</string>
+    <string name="compatibility_mode_title">Compatibility mode</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>

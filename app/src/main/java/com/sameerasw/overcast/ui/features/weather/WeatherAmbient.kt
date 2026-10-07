@@ -1,6 +1,11 @@
 package com.sameerasw.overcast.ui.features.weather
 
 import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -28,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.sameerasw.overcast.ui.components.LocalWeatherIconStyle
+import com.sameerasw.overcast.utils.CompatibilityMode
 import com.sameerasw.overcast.ui.modifiers.rainOnGlass
 import com.sameerasw.overcast.weather.effects.WeatherEffectLayer
 import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
@@ -41,7 +47,13 @@ internal const val AMBIENT_SURFACE_PREFIX = "ambient-hourly"
 
 // The gradient and the sun or moon, shared by the main screen and the screensaver.
 @Composable
-internal fun BoxScope.WeatherSkyBackground(snapshot: WeatherSnapshot?, now: Long, palette: WeatherPalette, collapse: () -> Float) {
+internal fun BoxScope.WeatherSkyBackground(
+    snapshot: WeatherSnapshot?,
+    now: Long,
+    palette: WeatherPalette,
+    collapse: () -> Float,
+    rise: () -> Float = { 1f },
+) {
     Box(
         Modifier
             .matchParentSize()
@@ -54,7 +66,7 @@ internal fun BoxScope.WeatherSkyBackground(snapshot: WeatherSnapshot?, now: Long
                 ),
             ),
     )
-    snapshot?.let { SkyBody(it, now, collapse) }
+    snapshot?.let { SkyBody(it, now, collapse, rise) }
 }
 
 // The rain-on-glass refraction, lit from wherever the sun or moon currently is.
@@ -66,6 +78,7 @@ internal fun Modifier.weatherGlass(
     collapse: () -> Float,
     intensityScale: Float = 1f,
     enabled: Boolean = true,
+    rise: () -> Float = { 1f },
 ): Modifier {
     val density = LocalDensity.current
     val rain = spec.layers.filterIsInstance<WeatherEffectLayer.Rain>().maxByOrNull { it.intensity }.takeIf { enabled }
@@ -77,7 +90,7 @@ internal fun Modifier.weatherGlass(
         if (sky == null) {
             Offset(0.5f, fallbackYPx - collapse() * collapseShiftPx)
         } else {
-            val t = sky.first
+            val t = sky.first * rise()
             Offset(
                 0.9f - 0.8f * t,
                 skyHeightPx * (0.66f - 0.4f * kotlin.math.sin(Math.PI.toFloat() * t)) - collapse() * collapseShiftPx,
@@ -124,6 +137,7 @@ internal fun AmbientWeatherScene(
     showForecast: Boolean,
     modifier: Modifier = Modifier,
     onDismiss: (() -> Unit)? = null,
+    animateIntro: Boolean = false,
 ) {
     val snapshot = presentation.snapshot
     val spec = presentation.effectSpec
@@ -132,11 +146,28 @@ internal fun AmbientWeatherScene(
     val steps = Calendar.getInstance().apply { timeInMillis = minute }.get(Calendar.MINUTE) / 5
     val rainSurfaces = remember { mutableStateMapOf<String, RainSurfaceSource>() }
     val cards = { rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) } }
+    val animate = animateIntro && !CompatibilityMode.enabled.value
+    val intro = remember { Animatable(if (animate) 0f else 1f) }
+    LaunchedEffect(animate) {
+        if (animate) intro.animateTo(1f, tween(AMBIENT_INTRO_MS, easing = LinearEasing))
+    }
+    val stage = { from: Float, to: Float -> FastOutSlowInEasing.transform(((intro.value - from) / (to - from)).coerceIn(0f, 1f)) }
+    val riseStage = { stage(0f, 0.9f) }
     CompositionLocalProvider(LocalWeatherIconStyle provides presentation.iconStyle, LocalRainSurfaces provides rainSurfaces) {
-        BoxWithConstraints(modifier.fillMaxSize().weatherGlass(spec, snapshot, presentation.now, { 0f }).dismissOnTouch(onDismiss)) {
-            WeatherSkyBackground(snapshot, presentation.now, presentation.palette) { 0f }
+        BoxWithConstraints(
+            modifier.fillMaxSize()
+                .weatherGlass(spec, snapshot, presentation.now, { 0f }, rise = riseStage)
+                .dismissOnTouch(onDismiss),
+        ) {
+            WeatherSkyBackground(snapshot, presentation.now, presentation.palette, { 0f }, riseStage)
             if (!spec.isEmpty) {
-                WeatherEffects(spec = spec, modifier = Modifier.matchParentSize(), strength = 1.7f, surfaces = cards, cover = cards)
+                WeatherEffects(
+                    spec = spec,
+                    modifier = Modifier.matchParentSize(),
+                    strength = 1.7f * stage(0.1f, 0.6f),
+                    surfaces = cards,
+                    cover = cards,
+                )
             }
             if (snapshot != null) {
                 Box(Modifier.fillMaxSize().offset(x = ((steps % 5) - 2).dp * 3, y = (((steps / 5) % 3) - 1).dp * 3)) {
@@ -146,17 +177,32 @@ internal fun AmbientWeatherScene(
                         presentation.palette,
                         0f,
                         1f,
-                        Modifier.padding(horizontal = SIDE_PADDING).ambientCenter(1f, this@BoxWithConstraints.constraints.maxHeight),
+                        Modifier
+                            .padding(horizontal = SIDE_PADDING)
+                            .ambientCenter(1f, this@BoxWithConstraints.constraints.maxHeight)
+                            .graphicsLayer {
+                                val reveal = stage(0.15f, 0.65f)
+                                alpha = reveal
+                                translationY = (1f - reveal) * 48.dp.toPx()
+                            },
                     )
-                    AmbientClock({ 1f }, presentation.palette, Modifier.align(Alignment.TopCenter))
+                    AmbientClock({ 0.4f + 0.6f * stage(0.3f, 0.75f) }, presentation.palette, Modifier.align(Alignment.TopCenter))
                     if (showForecast) {
-                        AmbientForecast({ 1f }, snapshot, presentation.units.temperature, presentation.palette, Modifier.align(Alignment.BottomCenter))
+                        AmbientForecast(
+                            { 0.4f + 0.6f * stage(0.45f, 0.95f) },
+                            snapshot,
+                            presentation.units.temperature,
+                            presentation.palette,
+                            Modifier.align(Alignment.BottomCenter),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+private const val AMBIENT_INTRO_MS = 2600
 
 private fun Modifier.dismissOnTouch(onDismiss: (() -> Unit)?): Modifier =
     if (onDismiss == null) {

@@ -80,5 +80,5 @@ private fun DreamContent(onDismiss: () -> Unit) {
         WeatherRepository.ensureLoaded(context)
         if (WeatherRepository.isStale(context)) WeatherRepository.refresh(context)
     }
-    AmbientWeatherScene(rememberWeatherPresentation(state.snapshot), settings.isAmbientForecastEnabled(), onDismiss = onDismiss)
+    AmbientWeatherScene(rememberWeatherPresentation(state.snapshot), settings.isAmbientForecastEnabled(), onDismiss = onDismiss, animateIntro = true)
 }

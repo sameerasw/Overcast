@@ -331,7 +331,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
             onDispose { window?.let { WindowCompat.getInsetsController(it, view).show(WindowInsetsCompat.Type.systemBars()) } }
         }
         Box(Modifier.fillMaxSize().onSizeChanged { rootHeightPx.intValue = it.height }.weatherGlass(effectSpec, snapshot, now, { collapse.floatValue }, effectRamp, !sheetOpen)) {
-                WeatherSkyBackground(snapshot, now, palette) { collapse.floatValue }
+                WeatherSkyBackground(snapshot, now, palette, collapse = { collapse.floatValue })
                 val topFadePx = if (headerBottom.floatValue > 0f) {
                     val expandedFade = with(density) { 36.dp.toPx() }
                     val collapsedFade = headerBottom.floatValue + with(density) { 40.dp.toPx() }
@@ -574,11 +574,10 @@ internal fun skyState(snapshot: WeatherSnapshot, now: Long): Pair<Float, Boolean
 internal val SKY_HEIGHT = 360.dp
 
 @Composable
-internal fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float) {
+internal fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float, rise: () -> Float = { 1f }) {
     val (t, isSun) = skyState(snapshot, now) ?: return
     val hide = (1f - collapse() * 1.6f).coerceIn(0f, 1f)
     if (hide <= 0f) return
-    val horizonFade = (minOf(t, 1f - t) / 0.1f).coerceIn(0f, 1f)
     val color = if (isSun) Color(0xFFFFE2A8) else Color(0xFFE6ECFF)
     Canvas(
         Modifier
@@ -586,8 +585,10 @@ internal fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float
             .height(SKY_HEIGHT)
             .graphicsLayer { translationY = -collapse() * 60.dp.toPx() },
     ) {
-        val x = size.width * (0.9f - 0.8f * t)
-        val y = size.height * 0.66f - size.height * 0.4f * kotlin.math.sin(Math.PI.toFloat() * t)
+        val shown = t * rise()
+        val horizonFade = (minOf(shown, 1f - shown) / 0.1f).coerceIn(0f, 1f)
+        val x = size.width * (0.9f - 0.8f * shown)
+        val y = size.height * 0.66f - size.height * 0.4f * kotlin.math.sin(Math.PI.toFloat() * shown)
         val alpha = 0.5f * hide * horizonFade
         val glowRadius = 110.dp.toPx()
         drawCircle(

@@ -24,6 +24,10 @@ class SettingsRepository(
         const val KEY_WEATHER_SAVED_PLACES = "weather_saved_places"
         const val KEY_WEATHER_RECENT_PLACES = "weather_recent_places"
         const val KEY_WEATHER_UNITS = "weather_units"
+        const val KEY_WEATHER_WIND_UNIT = "weather_wind_unit"
+        const val KEY_WEATHER_PRESSURE_UNIT = "weather_pressure_unit"
+        const val KEY_WEATHER_DISTANCE_UNIT = "weather_distance_unit"
+        const val KEY_WEATHER_PRECIPITATION_UNIT = "weather_precipitation_unit"
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
@@ -106,6 +110,18 @@ class SettingsRepository(
 
     fun getWeatherUnits(): String = getString(KEY_WEATHER_UNITS, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
     fun setWeatherUnits(units: String) = putString(KEY_WEATHER_UNITS, units)
+
+    fun getWindUnit(): String = getString(KEY_WEATHER_WIND_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
+    fun setWindUnit(unit: String) = putString(KEY_WEATHER_WIND_UNIT, unit)
+
+    fun getPressureUnit(): String = getString(KEY_WEATHER_PRESSURE_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
+    fun setPressureUnit(unit: String) = putString(KEY_WEATHER_PRESSURE_UNIT, unit)
+
+    fun getDistanceUnit(): String = getString(KEY_WEATHER_DISTANCE_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
+    fun setDistanceUnit(unit: String) = putString(KEY_WEATHER_DISTANCE_UNIT, unit)
+
+    fun getPrecipitationUnit(): String = getString(KEY_WEATHER_PRECIPITATION_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
+    fun setPrecipitationUnit(unit: String) = putString(KEY_WEATHER_PRECIPITATION_UNIT, unit)
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)
     fun setWeatherRefreshMinutes(minutes: Int) = putInt(KEY_WEATHER_REFRESH_MINUTES, minutes)

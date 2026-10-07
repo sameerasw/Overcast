@@ -61,9 +61,14 @@ import com.sameerasw.overcast.ui.components.menus.SegmentedDropdownMenuItem
 import com.sameerasw.overcast.ui.core.cards.ConfigPickerItem
 import com.sameerasw.overcast.ui.core.cards.IconToggleItem
 import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
-import com.sameerasw.overcast.ui.core.pickers.SegmentedPicker
 import com.sameerasw.overcast.utils.HapticUtil
+import com.sameerasw.overcast.weather.DistanceUnit
+import com.sameerasw.overcast.weather.PrecipitationUnit
+import com.sameerasw.overcast.weather.PressureUnit
+import com.sameerasw.overcast.weather.TemperatureUnit
 import com.sameerasw.overcast.weather.WeatherRepository
+import com.sameerasw.overcast.weather.WeatherUnits
+import com.sameerasw.overcast.weather.WindSpeedUnit
 import com.sameerasw.overcast.weather.model.WeatherError
 import com.sameerasw.overcast.weather.provider.OpenMeteoModels
 import com.sameerasw.overcast.weather.provider.WeatherProviders
@@ -88,7 +93,6 @@ fun WeatherSettingsUI(
 
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
-    var units by remember { mutableStateOf(settings.getWeatherUnits()) }
     var refreshMinutes by remember { mutableIntStateOf(settings.getWeatherRefreshMinutes()) }
     var savedKey by remember { mutableStateOf(settings.getWeatherApiKey(providerId).orEmpty()) }
     var keyInput by remember { mutableStateOf(savedKey) }
@@ -250,28 +254,57 @@ fun WeatherSettingsUI(
                 }
             }
 
+            SectionTitle(R.string.weather_section_units)
+            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
+                UnitPickerItem(
+                    title = R.string.weather_units_temperature,
+                    options = TemperatureUnit.entries,
+                    id = { it.id },
+                    symbol = { it.symbol },
+                    system = WeatherUnits.systemTemperature(),
+                    stored = settings.getWeatherUnits(),
+                    onSelected = settings::setWeatherUnits,
+                )
+                UnitPickerItem(
+                    title = R.string.weather_units_wind,
+                    options = WindSpeedUnit.entries,
+                    id = { it.id },
+                    symbol = { it.symbol },
+                    system = WeatherUnits.systemWind(),
+                    stored = settings.getWindUnit(),
+                    onSelected = settings::setWindUnit,
+                )
+                UnitPickerItem(
+                    title = R.string.weather_units_pressure,
+                    options = PressureUnit.entries,
+                    id = { it.id },
+                    symbol = { it.symbol },
+                    system = WeatherUnits.systemPressure(),
+                    stored = settings.getPressureUnit(),
+                    onSelected = settings::setPressureUnit,
+                )
+                UnitPickerItem(
+                    title = R.string.weather_units_distance,
+                    options = DistanceUnit.entries,
+                    id = { it.id },
+                    symbol = { it.symbol },
+                    system = WeatherUnits.systemDistance(),
+                    stored = settings.getDistanceUnit(),
+                    onSelected = settings::setDistanceUnit,
+                )
+                UnitPickerItem(
+                    title = R.string.weather_units_precipitation,
+                    options = PrecipitationUnit.entries,
+                    id = { it.id },
+                    symbol = { it.symbol },
+                    system = WeatherUnits.systemPrecipitation(),
+                    stored = settings.getPrecipitationUnit(),
+                    onSelected = settings::setPrecipitationUnit,
+                )
+            }
+
             SectionTitle(R.string.weather_section_display)
             RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
-                SegmentedPicker(
-                    items = listOf(
-                        SettingsRepository.WEATHER_UNITS_SYSTEM,
-                        SettingsRepository.WEATHER_UNITS_CELSIUS,
-                        SettingsRepository.WEATHER_UNITS_FAHRENHEIT,
-                    ),
-                    selectedItem = units,
-                    onItemSelected = {
-                        units = it
-                        settings.setWeatherUnits(it)
-                    },
-                    labelProvider = {
-                        when (it) {
-                            SettingsRepository.WEATHER_UNITS_CELSIUS -> "°C"
-                            SettingsRepository.WEATHER_UNITS_FAHRENHEIT -> "°F"
-                            else -> context.getString(R.string.weather_units_system)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
                 ConfigPickerItem(
                     title = stringResource(R.string.weather_refresh_interval_title),
                     selectedValue = intervalLabel(context, refreshMinutes),
@@ -385,5 +418,43 @@ private fun openUrl(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (_: Exception) {
+    }
+}
+
+@Composable
+private fun <T> UnitPickerItem(
+    title: Int,
+    options: List<T>,
+    id: (T) -> String,
+    symbol: (T) -> String,
+    system: T,
+    stored: String,
+    onSelected: (String) -> Unit,
+) {
+    var selected by remember { mutableStateOf(stored) }
+    val systemLabel = stringResource(R.string.weather_units_system)
+    val current = options.firstOrNull { id(it) == selected }
+    ConfigPickerItem(
+        title = stringResource(title),
+        selectedValue = current?.let(symbol) ?: "$systemLabel (${symbol(system)})",
+        iconRes = R.drawable.rounded_cloud_24,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        SegmentedDropdownMenuItem(
+            text = { Text("$systemLabel (${symbol(system)})") },
+            onClick = {
+                selected = SettingsRepository.WEATHER_UNITS_SYSTEM
+                onSelected(SettingsRepository.WEATHER_UNITS_SYSTEM)
+            },
+        )
+        options.forEach { option ->
+            SegmentedDropdownMenuItem(
+                text = { Text(symbol(option)) },
+                onClick = {
+                    selected = id(option)
+                    onSelected(id(option))
+                },
+            )
+        }
     }
 }

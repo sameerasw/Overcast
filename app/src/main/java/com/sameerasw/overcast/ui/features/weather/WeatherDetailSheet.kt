@@ -115,7 +115,8 @@ import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 import com.sameerasw.overcast.weather.effects.WeatherEffects
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.model.DailyForecast
-import com.sameerasw.overcast.weather.model.TemperatureUnit
+import com.sameerasw.overcast.weather.TemperatureUnit
+import com.sameerasw.overcast.weather.WeatherUnits
 import com.sameerasw.overcast.weather.model.WeatherAlert
 import com.sameerasw.overcast.weather.model.WeatherError
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
@@ -145,7 +146,7 @@ internal class WeatherPresentation(
     val snapshot: WeatherSnapshot?,
     val palette: WeatherPalette,
     val effectSpec: WeatherEffectSpec,
-    val unit: TemperatureUnit,
+    val units: WeatherUnits,
     val now: Long,
     val haptics: WeatherEffectHaptics?,
 )
@@ -168,7 +169,7 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?): WeatherPresent
     val simulated = real?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
     val snapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
         ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
-    val unit = remember(settingsVersion) { WeatherFormat.unitFor(settings.getWeatherUnits()) }
+    val units = remember(settingsVersion) { WeatherUnits.from(settings) }
     var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -189,7 +190,7 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?): WeatherPresent
     val effectSpec = remember(effects, snapshot?.condition, snapshot?.isDay, snapshot?.windKph, simulation?.id) {
         snapshot?.takeIf { effects }?.let { simulation?.spec ?: WeatherEffectSpec.from(it) } ?: WeatherEffectSpec.None
     }
-    return WeatherPresentation(snapshot, palette, effectSpec, unit, now, haptics)
+    return WeatherPresentation(snapshot, palette, effectSpec, units, now, haptics)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -202,7 +203,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
     val state by WeatherRepository.state.collectAsState()
     val presentation = rememberWeatherPresentation(state.snapshot)
     val snapshot = presentation.snapshot
-    val unit = presentation.unit
+    val units = presentation.units
     val now = presentation.now
     val palette = presentation.palette
     val effectSpec = presentation.effectSpec
@@ -427,10 +428,10 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                     verticalArrangement = Arrangement.spacedBy(20.dp),
                                 ) {
                                     AlertsSection(snapshot.activeAlerts().sortedByDescending { it.severity.ordinal }, palette)
-                                    HourlySection(snapshot, unit, palette)
+                                    HourlySection(snapshot, units.temperature, palette)
                                     snapshot.daily.orEmpty().takeIf { it.isNotEmpty() }
-                                        ?.let { DailySection(it, unit, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
-                                    DetailsSection(snapshot, unit, palette, Modifier.padding(horizontal = SIDE_PADDING))
+                                        ?.let { DailySection(it, units.temperature, palette, Modifier.padding(horizontal = SIDE_PADDING)) }
+                                    DetailsSection(snapshot, units, palette, Modifier.padding(horizontal = SIDE_PADDING))
                                     SunSection(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
                                     Footer(
                                         modifier = Modifier.padding(horizontal = SIDE_PADDING),
@@ -454,7 +455,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                 Box(Modifier.foldAway(((progress - 0.25f) / 0.5f).coerceIn(0f, 1f))) {
                                     LocationChip(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING), onClick = { showLocations = true })
                                 }
-                                Header(snapshot, unit, palette, progress, Modifier.padding(horizontal = SIDE_PADDING))
+                                Header(snapshot, units.temperature, palette, progress, Modifier.padding(horizontal = SIDE_PADDING))
                             }
                         }
                     }
@@ -931,8 +932,7 @@ private fun DailySection(days: List<DailyForecast>, unit: TemperatureUnit, palet
 private class Detail(val icon: Int, val label: Int, val value: String)
 
 @Composable
-private fun DetailsSection(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette, modifier: Modifier) {
-    val imperial = unit == TemperatureUnit.FAHRENHEIT
+private fun DetailsSection(snapshot: WeatherSnapshot, units: WeatherUnits, palette: WeatherPalette, modifier: Modifier) {
     val extras = snapshot.extras
     val details = buildList {
         add(Detail(R.drawable.rounded_water_drop_24, R.string.weather_detail_humidity, "${snapshot.humidity}%"))
@@ -940,22 +940,22 @@ private fun DetailsSection(snapshot: WeatherSnapshot, unit: TemperatureUnit, pal
             Detail(
                 R.drawable.rounded_air_24,
                 R.string.weather_detail_wind,
-                WeatherFormat.wind(snapshot.windKph, unit) + (extras?.windDirectionDeg?.let { " ${compass(it)}" } ?: ""),
+                WeatherFormat.wind(snapshot.windKph, units.wind) + (extras?.windDirectionDeg?.let { " ${compass(it)}" } ?: ""),
             ),
         )
-        extras?.windGustKph?.let { add(Detail(R.drawable.rounded_air_24, R.string.weather_detail_gusts, WeatherFormat.wind(it, unit))) }
+        extras?.windGustKph?.let { add(Detail(R.drawable.rounded_air_24, R.string.weather_detail_gusts, WeatherFormat.wind(it, units.wind))) }
         add(Detail(R.drawable.rounded_rainy_24, R.string.weather_detail_rain_chance, "${snapshot.chanceOfRain}%"))
         extras?.precipitationMm?.let {
-            add(Detail(R.drawable.rounded_rainy_24, R.string.weather_detail_precipitation, if (imperial) "%.2f in".format(Locale.US, it / 25.4) else "%.1f mm".format(Locale.US, it)))
+            add(Detail(R.drawable.rounded_rainy_24, R.string.weather_detail_precipitation, WeatherFormat.precipitation(it, units.precipitation)))
         }
         extras?.uvIndex?.let { add(Detail(R.drawable.rounded_wb_sunny_24, R.string.weather_detail_uv, it.roundToInt().toString())) }
         extras?.pressureHpa?.let {
-            add(Detail(R.drawable.rounded_cloud_24, R.string.weather_detail_pressure, if (imperial) "%.2f inHg".format(Locale.US, it * 0.02953) else "${it.roundToInt()} hPa"))
+            add(Detail(R.drawable.rounded_cloud_24, R.string.weather_detail_pressure, WeatherFormat.pressure(it, units.pressure)))
         }
         extras?.visibilityKm?.let {
-            add(Detail(R.drawable.rounded_visibility_24, R.string.weather_detail_visibility, if (imperial) "%.1f mi".format(Locale.US, it / 1.609344) else "%.1f km".format(Locale.US, it)))
+            add(Detail(R.drawable.rounded_visibility_24, R.string.weather_detail_visibility, WeatherFormat.distance(it, units.distance)))
         }
-        extras?.dewPointC?.let { add(Detail(R.drawable.rounded_water_drop_24, R.string.weather_detail_dew_point, WeatherFormat.temperature(it, unit))) }
+        extras?.dewPointC?.let { add(Detail(R.drawable.rounded_water_drop_24, R.string.weather_detail_dew_point, WeatherFormat.temperature(it, units.temperature))) }
         extras?.cloudCover?.let { add(Detail(R.drawable.rounded_cloud_24, R.string.weather_detail_cloud_cover, "$it%")) }
     }
     Column(modifier) {

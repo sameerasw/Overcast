@@ -451,6 +451,7 @@ private fun errorText(context: Context, error: WeatherError): String {
             WeatherError.LocationPermission -> R.string.weather_error_location_permission
             WeatherError.NoLocation -> R.string.weather_error_no_location
             WeatherError.Network -> R.string.weather_error_network
+            WeatherError.RateLimited -> R.string.weather_error_rate_limited
             is WeatherError.Unknown -> R.string.weather_error_unknown
         },
     )

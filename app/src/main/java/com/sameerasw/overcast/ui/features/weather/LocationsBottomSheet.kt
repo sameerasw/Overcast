@@ -120,6 +120,8 @@ fun LocationsBottomSheet(
             results = emptyList()
             searchError = if (e.reason == WeatherProviderException.Reason.INVALID_KEY) {
                 R.string.weather_error_missing_key
+            } else if (e.reason == WeatherProviderException.Reason.RATE_LIMITED) {
+                R.string.weather_error_rate_limited
             } else {
                 R.string.weather_error_network
             }

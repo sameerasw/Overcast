@@ -16,7 +16,7 @@ interface WeatherProvider {
 }
 
 class WeatherProviderException(val reason: Reason, message: String? = null) : Exception(message) {
-    enum class Reason { INVALID_KEY, NETWORK, BAD_RESPONSE }
+    enum class Reason { INVALID_KEY, RATE_LIMITED, NETWORK, BAD_RESPONSE }
 }
 
 object WeatherProviders {
@@ -29,6 +29,7 @@ object WeatherProviders {
         VisualCrossingProvider(),
         OpenWeatherMapProvider(),
         WeatherApiProvider(),
+        AccuWeatherProvider(),
     )
 
     val default: WeatherProvider get() = all.first()

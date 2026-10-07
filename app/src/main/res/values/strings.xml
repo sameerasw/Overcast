@@ -24,6 +24,7 @@
     <string name="weather_error_invalid_key">The API key was rejected</string>
     <string name="weather_error_location_permission">Location permission is needed for current location</string>
     <string name="weather_error_missing_key">Add an API key in weather options</string>
+    <string name="weather_error_rate_limited">API limited</string>
     <string name="weather_error_network">Couldn\'t reach the weather service</string>
     <string name="weather_error_no_location">Couldn\'t get a location</string>
     <string name="weather_error_unknown">Couldn\'t load weather</string>

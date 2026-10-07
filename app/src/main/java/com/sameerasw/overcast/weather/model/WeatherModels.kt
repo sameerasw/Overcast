@@ -127,6 +127,7 @@ sealed interface WeatherError {
     data object NoLocation : WeatherError
     data object LocationPermission : WeatherError
     data object Network : WeatherError
+    data object RateLimited : WeatherError
     data class Unknown(val message: String?) : WeatherError
 }
 

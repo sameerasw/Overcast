@@ -111,6 +111,7 @@ object WeatherRepository {
             } catch (e: WeatherProviderException) {
                 val error = when (e.reason) {
                     WeatherProviderException.Reason.INVALID_KEY -> WeatherError.InvalidApiKey
+                    WeatherProviderException.Reason.RATE_LIMITED -> WeatherError.RateLimited
                     WeatherProviderException.Reason.NETWORK -> WeatherError.Network
                     WeatherProviderException.Reason.BAD_RESPONSE -> WeatherError.Unknown(e.message)
                 }

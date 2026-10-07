@@ -12,15 +12,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -32,6 +36,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.sin
 import kotlin.random.Random
@@ -66,6 +71,7 @@ fun WeatherEffects(
     clearTop: Dp = 0.dp,
     haptics: WeatherEffectHaptics? = null,
     surfaces: () -> List<RainSurface> = { emptyList() },
+    cover: () -> List<RainSurface> = surfaces,
     scrollTick: () -> Int = { 0 },
 ) {
     if (spec.isEmpty) return
@@ -74,8 +80,10 @@ fun WeatherEffects(
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
     val currentHaptics by rememberUpdatedState(haptics)
     val currentSurfaces by rememberUpdatedState(surfaces)
+    val currentCover by rememberUpdatedState(cover)
     val currentScrollTick by rememberUpdatedState(scrollTick)
     val snowState = remember(spec) { SnowState() }
+    val coverPath = remember { Path() }
     val layers = remember(spec) {
         spec.layers.mapIndexed { index, layer ->
             val field = ParticleField.create(particleCount(layer), seed = index * 7919 + 17)
@@ -131,11 +139,23 @@ fun WeatherEffects(
             },
     ) {
         val t = time.floatValue
+        // Falling particles are hidden behind UI cards; ambient layers (clouds, fog, glow, stars) stay visible through the translucent cards.
+        coverPath.rewind()
+        currentCover().forEach { surface ->
+            val r = min(surface.cornerRadius, min(surface.rect.width, surface.rect.height) / 2f)
+            coverPath.addRoundRect(RoundRect(surface.rect, CornerRadius(r, r)))
+        }
         layers.forEach { state ->
             when (val layer = state.layer) {
-                is WeatherEffectLayer.Rain -> drawRain(state, layer, t, strength, if (snowState.settled) surfaces() else emptyList())
-                is WeatherEffectLayer.Snow -> drawSnow(state.field, t, layer.intensity, strength, if (snowState.settled) surfaces() else emptyList(), snowState)
-                is WeatherEffectLayer.Hail -> drawHail(state, layer.intensity, t, strength)
+                is WeatherEffectLayer.Rain -> clipPath(coverPath, ClipOp.Difference) {
+                    drawRain(state, layer, t, strength, if (snowState.settled) surfaces() else emptyList())
+                }
+                is WeatherEffectLayer.Snow -> clipPath(coverPath, ClipOp.Difference) {
+                    drawSnow(state.field, t, layer.intensity, strength, if (snowState.settled) surfaces() else emptyList(), snowState)
+                }
+                is WeatherEffectLayer.Hail -> clipPath(coverPath, ClipOp.Difference) {
+                    drawHail(state, layer.intensity, t, strength)
+                }
                 is WeatherEffectLayer.Clouds -> drawClouds(state.field, t, layer.intensity, strength, fog = false)
                 is WeatherEffectLayer.Fog -> drawClouds(state.field, t, layer.intensity, strength, fog = true)
                 is WeatherEffectLayer.SunGlow -> drawSunGlow(t, layer.intensity, strength)
@@ -147,7 +167,7 @@ fun WeatherEffects(
 }
 
 private fun particleCount(layer: WeatherEffectLayer): Int = when (layer) {
-    is WeatherEffectLayer.Rain -> (40 + 110 * layer.intensity).toInt()
+    is WeatherEffectLayer.Rain -> (6 + 55 * layer.intensity.pow(1.3f)).toInt()
     is WeatherEffectLayer.Snow -> (20 + 60 * layer.intensity).toInt()
     is WeatherEffectLayer.Hail -> (20 + 50 * layer.intensity).toInt()
     is WeatherEffectLayer.Stars -> (12 + 28 * layer.intensity).toInt()
@@ -159,12 +179,12 @@ private fun particleCount(layer: WeatherEffectLayer): Int = when (layer) {
 private class Fall(val cyclesPerSecond: Float, val span: Float, val impact: Float)
 
 private fun rainLength(field: ParticleField, i: Int, intensity: Float, density: Density): Float =
-    with(density) { (12.dp.toPx() + 14.dp.toPx() * intensity) * (0.6f + 0.4f * field.size[i]) }
+    with(density) { (8.dp.toPx() + 10.dp.toPx() * intensity) * (0.6f + 0.4f * field.size[i]) }
 
 private fun rainFall(field: ParticleField, i: Int, intensity: Float, h: Float, density: Density): Fall {
     val length = rainLength(field, i, intensity, density)
     val span = h + length
-    val cycles = (1.4f + 0.9f * field.speed[i]) * (0.8f + 0.4f * intensity) * h / span
+    val cycles = RAIN_SPEED * (1.4f + 0.9f * field.speed[i]) * (0.8f + 0.4f * intensity) * h / span
     return Fall(cycles, span, h / span)
 }
 
@@ -279,7 +299,7 @@ private fun DrawScope.drawRain(
     val field = state.field
     val w = size.width
     val h = size.height
-    val stroke = 1.2.dp.toPx()
+    val dropPath = Path()
     for (i in 0 until field.count) {
         val length = rainLength(field, i, layer.intensity, this)
         val fall = rainFall(field, i, layer.intensity, h, this)
@@ -300,13 +320,8 @@ private fun DrawScope.drawRain(
         }
         val alpha = (0.12f + 0.2f * layer.intensity) * (0.6f + 0.4f * field.size[i]) * strength
         if (visible) {
-            drawLine(
-                color = Color.White.copy(alpha = alpha),
-                start = Offset(x, y),
-                end = Offset(endX, endY),
-                strokeWidth = stroke,
-                cap = StrokeCap.Round,
-            )
+            val radius = 1.5.dp.toPx() * (0.75f + 0.5f * field.size[i])
+            drawDrop(dropPath, x, y, endX, endY, radius, alpha * 1.6f)
         }
         // The splash belongs to whichever pass last hit something: this one, or the one that just wrapped around.
         for (c in cycle downTo cycle - 1) {
@@ -322,6 +337,45 @@ private fun DrawScope.drawRain(
             }
         }
     }
+}
+
+// A teardrop: round head at the leading end, tapering to a faded point behind it.
+private fun DrawScope.drawDrop(path: Path, tailX: Float, tailY: Float, headX: Float, headY: Float, radius: Float, alpha: Float) {
+    val dx = headX - tailX
+    val dy = headY - tailY
+    val length = sqrt(dx * dx + dy * dy)
+    if (length < 0.5f) return
+    val ux = dx / length
+    val uy = dy / length
+    if (length <= radius * 2f) {
+        drawCircle(Color.White.copy(alpha = alpha), min(radius, length / 2f), Offset(headX - ux * length / 2f, headY - uy * length / 2f))
+        return
+    }
+    val nx = -uy
+    val ny = ux
+    val cx = headX - ux * radius
+    val cy = headY - uy * radius
+    val mx = (tailX + cx) / 2f
+    val my = (tailY + cy) / 2f
+    val k = radius * 1.33f
+    path.rewind()
+    path.moveTo(tailX, tailY)
+    path.quadraticTo(mx + nx * radius * 0.3f, my + ny * radius * 0.3f, cx + nx * radius, cy + ny * radius)
+    path.cubicTo(
+        cx + nx * radius + ux * k, cy + ny * radius + uy * k,
+        cx - nx * radius + ux * k, cy - ny * radius + uy * k,
+        cx - nx * radius, cy - ny * radius,
+    )
+    path.quadraticTo(mx - nx * radius * 0.3f, my - ny * radius * 0.3f, tailX, tailY)
+    path.close()
+    drawPath(
+        path,
+        Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = alpha)),
+            start = Offset(tailX, tailY),
+            end = Offset(headX, headY),
+        ),
+    )
 }
 
 private fun surfaceDepth(i: Int, cycle: Int): Int {
@@ -611,7 +665,8 @@ private const val SPLASH_S = 0.28f
 private const val SURFACE_DROP_SHARE = 0.035f
 private const val SPLASH_SHARE = 0.22f
 private const val HAIL_SPLASH_SHARE = 0.12f
-private const val RAIN_HAPTIC_SHARE = 0.05f
+private const val RAIN_SPEED = 0.6f
+private const val RAIN_HAPTIC_SHARE = 0.1f
 private const val HAIL_HAPTIC_SHARE = 0.1f
 private const val HERO_SALT = 101
 private const val SPLASH_SALT = 211

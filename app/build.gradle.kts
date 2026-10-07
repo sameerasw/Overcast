@@ -29,7 +29,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sameerasw.overcast"
-        minSdk = 33
+        minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"

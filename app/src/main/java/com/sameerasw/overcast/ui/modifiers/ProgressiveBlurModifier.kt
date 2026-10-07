@@ -9,6 +9,7 @@
 
 package com.sameerasw.overcast.ui.modifiers
 
+import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -50,7 +51,7 @@ fun Modifier.progressiveBlur(
         val blurRadiusDp = with(density) { blurRadius.toDp() }
 
         val blurModifier =
-            if (blurRadius > 0f && !isPowerSave) {
+            if (blurRadius > 0f && !isPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Modifier.blur {
                     this.edgeTreatment = edgeTreatment
                     val sizeHeightPx = size.height.toPx()
@@ -137,7 +138,7 @@ fun Modifier.progressiveBlur(
         val isPowerSave = remember(context) { DeviceUtils.isPowerSaveMode(context) }
 
         val blurModifier =
-            if (maxRadius > 0.dp && !isPowerSave) {
+            if (maxRadius > 0.dp && !isPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Modifier.blur {
                     this.edgeTreatment = edgeTreatment
                     radius =

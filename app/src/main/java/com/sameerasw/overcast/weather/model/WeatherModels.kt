@@ -31,8 +31,6 @@ enum class AlertSeverity {
     val isSevere: Boolean get() = this == SEVERE || this == EXTREME
 }
 
-enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
-
 @Keep
 data class WeatherLocation(
     val latitude: Double,

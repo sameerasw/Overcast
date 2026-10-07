@@ -16,6 +16,7 @@ import kotlin.coroutines.resume
 
 object DeviceLocationSource {
     private const val TIMEOUT_MS = 10_000L
+    private const val MAX_LAST_KNOWN_AGE_MS = 60 * 60_000L
 
     fun hasPermission(context: Context): Boolean =
         context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -35,8 +36,9 @@ object DeviceLocationSource {
             }
         }
         tokenSource.cancel()
+        // An old last-known fix is likely wherever we were hours ago (often home), so it isn't trusted.
         val location = fresh ?: try {
-            client.lastLocation.awaitOrNull()
+            client.lastLocation.awaitOrNull()?.takeIf { System.currentTimeMillis() - it.time <= MAX_LAST_KNOWN_AGE_MS }
         } catch (_: SecurityException) {
             null
         }

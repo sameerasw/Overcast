@@ -103,6 +103,70 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                 licenseColor = getLicenseColor("creative commons"),
                 links = listOf(context.getString(R.string.action_website) to "https://open-meteo.com"),
             ),
+            LicenseSection(
+                title = "Meteocons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Weather icon set by Bas Milius, available as an icon style.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://meteocons.com",
+                    context.getString(R.string.action_source_code) to "https://github.com/basmilius/weather-icons",
+                ),
+            ),
+            LicenseSection(
+                title = "Weather Icons",
+                iconRes = R.drawable.rounded_thunderstorm_24,
+                description = "Weather icon set by Erik Flowers, available as an icon style.",
+                licenseType = "SIL OFL 1.1",
+                licenseColor = getLicenseColor("creative commons"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://erikflowers.github.io/weather-icons/",
+                    context.getString(R.string.action_source_code) to "https://github.com/erikflowers/weather-icons",
+                ),
+            ),
+            LicenseSection(
+                title = "Fluent Emoji 3D",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "3D weather emoji by Microsoft, available as an icon style. Some icons are composed from several emoji.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_source_code) to "https://github.com/microsoft/fluentui-emoji",
+                ),
+            ),
+            LicenseSection(
+                title = "Noto Emoji 3D",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "3D weather emoji by Google, available as an icon style. Some icons are composed from several emoji.",
+                licenseType = "Apache 2.0",
+                licenseColor = getLicenseColor("apache"),
+                links = listOf(
+                    context.getString(R.string.action_source_code) to "https://github.com/googlefonts/noto-emoji",
+                ),
+            ),
+            LicenseSection(
+                title = "Phosphor Icons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Duotone weather icons by Phosphor, available as an icon style. Some icons are composed from several glyphs.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://phosphoricons.com",
+                    context.getString(R.string.action_source_code) to "https://github.com/phosphor-icons/core",
+                ),
+            ),
+            LicenseSection(
+                title = "Tabler Icons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Outline weather icons by Paweł Kuna, available as an icon style. Some icons are composed from several glyphs.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://tabler.io/icons",
+                    context.getString(R.string.action_source_code) to "https://github.com/tabler/tabler-icons",
+                ),
+            ),
         )
     }
 

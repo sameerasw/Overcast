@@ -18,6 +18,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -35,6 +37,7 @@ import kotlinx.coroutines.delay
 import java.util.Calendar
 
 internal val AMBIENT_EDGE_GAP = 16.dp
+internal const val AMBIENT_SURFACE_PREFIX = "ambient-hourly"
 
 // The gradient and the sun or moon, shared by the main screen and the screensaver.
 @Composable
@@ -110,7 +113,7 @@ internal fun AmbientForecast(
                 translationY = (1f - reveal) * 16.dp.toPx()
             },
     ) {
-        HourlySection(snapshot, unit, palette)
+        HourlySection(snapshot, unit, palette, AMBIENT_SURFACE_PREFIX)
     }
 }
 
@@ -127,11 +130,13 @@ internal fun AmbientWeatherScene(
     val minute by rememberMinuteClock()
     // A slow drift keeps static text from sitting on the same pixels for hours.
     val steps = Calendar.getInstance().apply { timeInMillis = minute }.get(Calendar.MINUTE) / 5
-    CompositionLocalProvider(LocalWeatherIconStyle provides presentation.iconStyle) {
+    val rainSurfaces = remember { mutableStateMapOf<String, RainSurfaceSource>() }
+    val cards = { rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) } }
+    CompositionLocalProvider(LocalWeatherIconStyle provides presentation.iconStyle, LocalRainSurfaces provides rainSurfaces) {
         BoxWithConstraints(modifier.fillMaxSize().weatherGlass(spec, snapshot, presentation.now, { 0f }).dismissOnTouch(onDismiss)) {
             WeatherSkyBackground(snapshot, presentation.now, presentation.palette) { 0f }
             if (!spec.isEmpty) {
-                WeatherEffects(spec = spec, modifier = Modifier.matchParentSize(), strength = 1.7f)
+                WeatherEffects(spec = spec, modifier = Modifier.matchParentSize(), strength = 1.7f, surfaces = cards, cover = cards)
             }
             if (snapshot != null) {
                 Box(Modifier.fillMaxSize().offset(x = ((steps % 5) - 2).dp * 3, y = (((steps / 5) % 3) - 1).dp * 3)) {

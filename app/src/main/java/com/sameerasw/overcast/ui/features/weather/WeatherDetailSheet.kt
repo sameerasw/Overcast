@@ -350,10 +350,10 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                         strength = 1.7f * effectRamp,
                         haptics = effectHaptics.takeIf { effectRamp > 0.6f },
                         surfaces = {
-                            if (ambient.floatValue > 0.3f) return@WeatherEffects emptyList()
+                            val all = rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }
+                            if (ambient.floatValue > 0.3f) return@WeatherEffects all.filter { it.key.startsWith(AMBIENT_SURFACE_PREFIX) }
                             val top = sheetTop.floatValue
-                            val cards = rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }
-                                .filter { it.rect.top >= headerBottom.floatValue }
+                            val cards = all.filter { !it.key.startsWith(AMBIENT_SURFACE_PREFIX) && it.rect.top >= headerBottom.floatValue }
                             if (top.isNaN()) {
                                 cards
                             } else {
@@ -361,7 +361,14 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                     RainSurface("locations-sheet", Rect(0f, top, screenWidthPx, screenHeightPx), sheetCornerPx, 0f, screenWidthPx)
                             }
                         },
-                        cover = { if (ambient.floatValue > 0.3f) emptyList() else rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) } },
+                        cover = {
+                            val all = rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }
+                            if (ambient.floatValue > 0.3f) {
+                                all.filter { it.key.startsWith(AMBIENT_SURFACE_PREFIX) }
+                            } else {
+                                all.filter { !it.key.startsWith(AMBIENT_SURFACE_PREFIX) }
+                            }
+                        },
                         scrollTick = { scrollTick.intValue },
                     )
                 }
@@ -596,9 +603,9 @@ internal fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float
     }
 }
 
-private val LocalRainSurfaces = androidx.compose.runtime.staticCompositionLocalOf<SnapshotStateMap<String, RainSurfaceSource>?> { null }
+internal val LocalRainSurfaces = androidx.compose.runtime.staticCompositionLocalOf<SnapshotStateMap<String, RainSurfaceSource>?> { null }
 
-private class RainSurfaceSource(val corner: Float, val mask: (() -> Rect)?) {
+internal class RainSurfaceSource(val corner: Float, val mask: (() -> Rect)?) {
     var coordinates: LayoutCoordinates? = null
 
     fun resolve(key: String): RainSurface? {
@@ -612,7 +619,7 @@ private class RainSurfaceSource(val corner: Float, val mask: (() -> Rect)?) {
 }
 
 @Composable
-private fun Modifier.rainSurface(key: String, corner: Dp = 28.dp, mask: (() -> Rect)? = null): Modifier {
+internal fun Modifier.rainSurface(key: String, corner: Dp = 28.dp, mask: (() -> Rect)? = null): Modifier {
     val registry = LocalRainSurfaces.current ?: return this
     val cornerPx = with(LocalDensity.current) { corner.toPx() }
     val source = remember(key, cornerPx) { RainSurfaceSource(cornerPx, mask) }
@@ -922,7 +929,7 @@ private fun AlertCard(alert: WeatherAlert, palette: WeatherPalette, modifier: Mo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette) {
+internal fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette, surfacePrefix: String = "hourly") {
     if (snapshot.hourly.isEmpty()) return
     val context = LocalContext.current
     val hours = snapshot.hourly
@@ -938,7 +945,7 @@ internal fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, pal
             val hour = hours[index]
             Column(
                 Modifier
-                    .rainSurface("hourly:$index", mask = { carouselItemDrawInfo.maskRect })
+                    .rainSurface("$surfacePrefix:$index", mask = { carouselItemDrawInfo.maskRect })
                     .fillMaxSize()
                     .maskClip(MaterialTheme.shapes.extraLarge)
                     .background(palette.card)

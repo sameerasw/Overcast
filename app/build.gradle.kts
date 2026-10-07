@@ -31,10 +31,24 @@ android {
         applicationId = "com.sameerasw.overcast"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        // GitHub
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "PLAY_BUILD", "false")
+        }
+        // Play Store.
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "PLAY_BUILD", "true")
+        }
     }
 
     buildTypes {
@@ -65,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -86,6 +101,7 @@ dependencies {
     implementation(libs.androidx.glance.material3)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.play.services.location)
+    "playImplementation"(libs.play.billing.ktx)
     implementation(libs.gson)
     implementation(libs.coil.compose)
     implementation(libs.aboutlibraries.core)

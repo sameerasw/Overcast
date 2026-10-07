@@ -74,6 +74,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -422,32 +423,34 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                     }
                 }
                 if (snapshot == null) {
-                    Column(Modifier.fillMaxSize()) {
-                        Spacer(Modifier.height(120.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                            if (state.loading) LoadingIndicator() else Text(errorLabel(context, state.error), color = palette.onBaseMuted)
-                        }
-                        if (state.error == WeatherError.LocationPermission) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                                FilledTonalButton(onClick = { requestLocation() }) {
-                                    Text(stringResource(R.string.weather_grant_location))
-                                }
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        if (state.loading || state.error == null) {
+                            LoadingIndicator(Modifier.size(96.dp))
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    HapticUtil.performVirtualKeyHaptic(view)
+                                    scope.launch { WeatherRepository.refresh(context, force = true) }
+                                },
+                                modifier = Modifier.size(96.dp),
+                            ) {
+                                Icon(painterResource(R.drawable.rounded_refresh_24), stringResource(R.string.weather_refresh), tint = palette.onBase, modifier = Modifier.size(40.dp))
                             }
                         }
-                        if (!state.loading) {
-                            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Center) {
-                                FilledTonalButton(
-                                    onClick = {
-                                        HapticUtil.performVirtualKeyHaptic(view)
-                                        showLocations = true
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.weather_choose_location))
-                                }
-                            }
+                        Spacer(Modifier.height(32.dp))
+                        IconButton(
+                            onClick = {
+                                HapticUtil.performVirtualKeyHaptic(view)
+                                onOpenSettings()
+                            },
+                            modifier = Modifier.size(56.dp),
+                        ) {
+                            Icon(painterResource(R.drawable.rounded_settings_24), stringResource(R.string.weather_open_settings), tint = palette.onBase, modifier = Modifier.size(28.dp))
                         }
-                        Spacer(Modifier.height(24.dp))
-                        SettingsButton(palette, onOpenSettings, Modifier.padding(horizontal = SIDE_PADDING).rainSurface("settings-button", corner = 20.dp))
                     }
                 } else {
                     var topPx by headerBottom
@@ -1208,6 +1211,7 @@ private fun errorLabel(context: Context, error: WeatherError?): String {
             WeatherError.LocationPermission -> R.string.weather_error_location_permission
             WeatherError.NoLocation -> R.string.weather_error_no_location
             WeatherError.Network -> R.string.weather_error_network
+            WeatherError.RateLimited -> R.string.weather_error_rate_limited
             is WeatherError.Unknown, null -> R.string.weather_error_unknown
         },
     )

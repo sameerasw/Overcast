@@ -31,6 +31,7 @@ internal object ProviderHttp {
             if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN) {
                 throw WeatherProviderException(WeatherProviderException.Reason.INVALID_KEY)
             }
+            if (code == 429) throw WeatherProviderException(WeatherProviderException.Reason.RATE_LIMITED)
             if (code !in 200..299) {
                 throw WeatherProviderException(WeatherProviderException.Reason.BAD_RESPONSE, "HTTP $code")
             }

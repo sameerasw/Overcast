@@ -24,6 +24,7 @@
     <string name="weather_error_invalid_key">The API key was rejected</string>
     <string name="weather_error_location_permission">Location permission is needed for current location</string>
     <string name="weather_error_missing_key">Add an API key in weather options</string>
+    <string name="weather_error_rate_limited">API limited</string>
     <string name="weather_error_network">Couldn\'t reach the weather service</string>
     <string name="weather_error_no_location">Couldn\'t get a location</string>
     <string name="weather_error_unknown">Couldn\'t load weather</string>
@@ -78,6 +79,7 @@
     <string name="widget_bg_material">Material</string>
     <string name="widget_weather_empty">Open Overcast</string>
     <string name="compatibility_mode_title">Compatibility mode</string>
+    <string name="compatibility_info">Disables animations and blurs. \nSuitable for low-end devices.</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>
@@ -93,13 +95,13 @@
     <string name="action_website">Website</string>
     <string name="action_contact">Contact</string>
     <string name="action_telegram">Telegram</string>
-    <string name="action_support">Support</string>
     <string name="label_other_apps">Other Apps</string>
     <string name="app_airsync">AirSync</string>
     <string name="app_zenzero">ZenZero</string>
     <string name="app_canvas">Canvas</string>
     <string name="app_tasks">Tasks</string>
-    <string name="app_zero">Zero</string>
+    <string name="app_github_username">sameerasw</string>
+    <string name="app_repo_name">/ Overcast</string>
     <string name="app_essentials">Essentials</string>
     <string name="action_licenses_and_credits">Licenses</string>
     <string name="send_email_chooser_title">Send email</string>
@@ -128,4 +130,23 @@
     <string name="permdesc_read_weather">Lets the app read the latest weather for your current or saved location from Overcast.</string>
     <string name="permgrouplab_weather">Weather</string>
     <string name="permgroupdesc_weather">access weather data from Overcast</string>
+    <string name="support_banner_title">Support Overcast</string>
+    <string name="support_banner_text">Get the app from Google Play to support its development</string>
+    <string name="onboarding_thanks">Thank you for the support &lt;3</string>
+    <string name="welcome_title">Welcome to Overcast</string>
+    <string name="welcome_developer_attribution">Made by sameerasw</string>
+    <string name="action_lets_begin">Let\'s begin</string>
+    <string name="onboarding_location_title">Location Preferences</string>
+    <string name="onboarding_location_subtitle">Allow location access, or search for a city instead. You can change this any time.</string>
+    <string name="onboarding_perm_location_title">Approximate location</string>
+    <string name="onboarding_perm_location_usage">Shows the weather where you are. Only your general area is used.</string>
+    <string name="onboarding_perm_background_title">Background location</string>
+    <string name="onboarding_perm_background_usage">Optional. Keeps widgets and the screensaver up to date when the app is closed.</string>
+    <string name="onboarding_search_title">Choose a city</string>
+    <string name="onboarding_search_usage">Or, pick a place instead.</string>
+    <string name="onboarding_search_action">Search</string>
+    <string name="onboarding_allow">Allow</string>
+    <string name="onboarding_finish">Finish</string>
+    <string name="dev_reset_welcome_title">Reset welcome</string>
+    <string name="dev_reset_welcome_done">Welcome will show again on next launch</string>
 </resources>

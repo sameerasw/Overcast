@@ -65,6 +65,9 @@ class WeatherApiProvider : WeatherProvider {
             connection.connectTimeout = TIMEOUT_MS
             connection.readTimeout = TIMEOUT_MS
             val code = connection.responseCode
+            if (code == 429 || (code == HttpURLConnection.HTTP_FORBIDDEN && connection.errorStream?.bufferedReader()?.use { it.readText() }?.contains("\"code\":2007") == true)) {
+                throw WeatherProviderException(WeatherProviderException.Reason.RATE_LIMITED)
+            }
             if (code == HttpURLConnection.HTTP_UNAUTHORIZED || code == HttpURLConnection.HTTP_FORBIDDEN) {
                 throw WeatherProviderException(WeatherProviderException.Reason.INVALID_KEY)
             }

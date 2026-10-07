@@ -13,7 +13,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
@@ -29,9 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,6 +58,7 @@ import com.sameerasw.overcast.ui.components.menus.SegmentedDropdownMenuItem
 import com.sameerasw.overcast.ui.core.cards.ConfigPickerItem
 import com.sameerasw.overcast.ui.core.cards.IconToggleItem
 import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
+import com.sameerasw.overcast.ui.core.sheets.OvercastBottomSheet
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.DistanceUnit
 import com.sameerasw.overcast.weather.PrecipitationUnit
@@ -74,7 +72,6 @@ import com.sameerasw.overcast.weather.model.WeatherError
 import com.sameerasw.overcast.weather.provider.OpenMeteoModels
 import com.sameerasw.overcast.weather.provider.WeatherProviders
 import kotlinx.coroutines.launch
-import java.util.Date
 
 
 private val REFRESH_OPTIONS = listOf(30, 60, 120, 180, 360)
@@ -94,6 +91,8 @@ fun WeatherSettingsUI(
 
     var compatibility by remember { mutableStateOf(settings.isCompatibilityMode()) }
     var ambientForecast by remember { mutableStateOf(settings.isAmbientForecastEnabled()) }
+    var unitsExpanded by remember { mutableStateOf(false) }
+    var showCompatibilityInfo by remember { mutableStateOf(false) }
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
     var refreshMinutes by remember { mutableIntStateOf(settings.getWeatherRefreshMinutes()) }
@@ -142,7 +141,7 @@ fun WeatherSettingsUI(
                     ConfigPickerItem(
                         title = stringResource(R.string.weather_model_title),
                         selectedValue = OpenMeteoModels.label(modelId),
-                        iconRes = R.drawable.rounded_cloud_24,
+                        iconRes = R.drawable.rounded_model_training_24,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         OpenMeteoModels.all.forEach { option ->
@@ -228,6 +227,89 @@ fun WeatherSettingsUI(
                         }
                     }
                 }
+                ConfigPickerItem(
+                    title = stringResource(R.string.weather_refresh_interval_title),
+                    selectedValue = intervalLabel(context, refreshMinutes),
+                    iconRes = R.drawable.rounded_schedule_24,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    REFRESH_OPTIONS.forEach { minutes ->
+                        SegmentedDropdownMenuItem(
+                            text = { Text(intervalLabel(context, minutes)) },
+                            onClick = {
+                                refreshMinutes = minutes
+                                settings.setWeatherRefreshMinutes(minutes)
+                            },
+                        )
+                    }
+                }
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_straighten_24,
+                    title = stringResource(R.string.weather_section_units),
+                    showToggle = false,
+                    onClick = { unitsExpanded = !unitsExpanded },
+                    trailingContent = {
+                        Icon(
+                            painter = painterResource(if (unitsExpanded) R.drawable.rounded_keyboard_arrow_up_24 else R.drawable.rounded_keyboard_arrow_down_24),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
+                AnimatedVisibility(visible = unitsExpanded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        UnitPickerItem(
+                            title = R.string.weather_units_temperature,
+                            options = TemperatureUnit.entries,
+                            iconRes = R.drawable.rounded_thermostat_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemTemperature(),
+                            stored = settings.getWeatherUnits(),
+                            onSelected = settings::setWeatherUnits,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_wind,
+                            options = WindSpeedUnit.entries,
+                            iconRes = R.drawable.rounded_air_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemWind(),
+                            stored = settings.getWindUnit(),
+                            onSelected = settings::setWindUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_pressure,
+                            options = PressureUnit.entries,
+                            iconRes = R.drawable.rounded_compress_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemPressure(),
+                            stored = settings.getPressureUnit(),
+                            onSelected = settings::setPressureUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_distance,
+                            options = DistanceUnit.entries,
+                            iconRes = R.drawable.rounded_visibility_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemDistance(),
+                            stored = settings.getDistanceUnit(),
+                            onSelected = settings::setDistanceUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_precipitation,
+                            options = PrecipitationUnit.entries,
+                            iconRes = R.drawable.rounded_water_drop_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemPrecipitation(),
+                            stored = settings.getPrecipitationUnit(),
+                            onSelected = settings::setPrecipitationUnit,
+                        )
+                    }
+                }
                 val sourceError = weatherState.error?.takeIf { it !is WeatherError.LocationPermission && it !is WeatherError.NoLocation }
                 AnimatedVisibility(visible = sourceError != null) {
                     val shownError = remember { mutableStateOf(sourceError) }
@@ -257,55 +339,6 @@ fun WeatherSettingsUI(
                 }
             }
 
-            SectionTitle(R.string.weather_section_units)
-            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
-                UnitPickerItem(
-                    title = R.string.weather_units_temperature,
-                    options = TemperatureUnit.entries,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemTemperature(),
-                    stored = settings.getWeatherUnits(),
-                    onSelected = settings::setWeatherUnits,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_wind,
-                    options = WindSpeedUnit.entries,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemWind(),
-                    stored = settings.getWindUnit(),
-                    onSelected = settings::setWindUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_pressure,
-                    options = PressureUnit.entries,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemPressure(),
-                    stored = settings.getPressureUnit(),
-                    onSelected = settings::setPressureUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_distance,
-                    options = DistanceUnit.entries,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemDistance(),
-                    stored = settings.getDistanceUnit(),
-                    onSelected = settings::setDistanceUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_precipitation,
-                    options = PrecipitationUnit.entries,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemPrecipitation(),
-                    stored = settings.getPrecipitationUnit(),
-                    onSelected = settings::setPrecipitationUnit,
-                )
-            }
-
             SectionTitle(R.string.weather_section_display)
             RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
                 var iconStyle by remember { mutableStateOf(WeatherIconStyle.fromId(settings.getWeatherIconStyle())) }
@@ -318,32 +351,6 @@ fun WeatherSettingsUI(
                         },
                     )
                 }
-                ConfigPickerItem(
-                    title = stringResource(R.string.weather_refresh_interval_title),
-                    selectedValue = intervalLabel(context, refreshMinutes),
-                    iconRes = R.drawable.rounded_schedule_24,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    REFRESH_OPTIONS.forEach { minutes ->
-                        SegmentedDropdownMenuItem(
-                            text = { Text(intervalLabel(context, minutes)) },
-                            onClick = {
-                                refreshMinutes = minutes
-                                settings.setWeatherRefreshMinutes(minutes)
-                            },
-                        )
-                    }
-                }
-                IconToggleItem(
-                    iconRes = R.drawable.rounded_speed_24,
-                    title = stringResource(R.string.compatibility_mode_title),
-                    isChecked = compatibility,
-                    onCheckedChange = {
-                        HapticUtil.performVirtualKeyHaptic(view)
-                        compatibility = it
-                        settings.setCompatibilityMode(it)
-                    },
-                )
                 IconToggleItem(
                     iconRes = R.drawable.rounded_rainy_24,
                     title = stringResource(R.string.weather_effects_title),
@@ -355,7 +362,7 @@ fun WeatherSettingsUI(
                     },
                 )
                 IconToggleItem(
-                    iconRes = R.drawable.rounded_thunderstorm_24,
+                    iconRes = R.drawable.rounded_vibration_24,
                     title = stringResource(R.string.weather_haptics_title),
                     isChecked = weatherHaptics,
                     enabled = effects,
@@ -365,12 +372,23 @@ fun WeatherSettingsUI(
                         settings.setWeatherHapticsEnabled(it)
                     },
                 )
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_speed_24,
+                    title = stringResource(R.string.compatibility_mode_title),
+                    onInfoClick = { showCompatibilityInfo = true },
+                    isChecked = compatibility,
+                    onCheckedChange = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        compatibility = it
+                        settings.setCompatibilityMode(it)
+                    },
+                )
             }
 
             SectionTitle(R.string.weather_section_screensaver)
             RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
                 IconToggleItem(
-                    iconRes = R.drawable.rounded_schedule_24,
+                    iconRes = R.drawable.rounded_dashboard_24,
                     title = stringResource(R.string.screensaver_show_forecast),
                     isChecked = ambientForecast,
                     onCheckedChange = {
@@ -380,28 +398,31 @@ fun WeatherSettingsUI(
                     },
                 )
             }
+    }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = statusText(context, weatherState.snapshot?.updatedAt, weatherState.error),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (weatherState.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                if (weatherState.loading) {
-                    LoadingIndicator(Modifier.size(32.dp))
-                } else {
-                    OutlinedButton(onClick = {
-                        HapticUtil.performVirtualKeyHaptic(view)
-                        refreshNow()
-                    }) {
-                        Text(stringResource(R.string.action_refresh))
-                    }
-                }
-            }
+    if (showCompatibilityInfo) {
+        CompatibilityInfoSheet(onDismiss = { showCompatibilityInfo = false })
+    }
+}
+
+@Composable
+private fun CompatibilityInfoSheet(onDismiss: () -> Unit) {
+    OvercastBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.compatibility_mode_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Text(
+                text = stringResource(R.string.compatibility_info),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(8.dp))
+        }
     }
 }
 
@@ -430,20 +451,12 @@ private fun errorText(context: Context, error: WeatherError): String {
             WeatherError.LocationPermission -> R.string.weather_error_location_permission
             WeatherError.NoLocation -> R.string.weather_error_no_location
             WeatherError.Network -> R.string.weather_error_network
+            WeatherError.RateLimited -> R.string.weather_error_rate_limited
             is WeatherError.Unknown -> R.string.weather_error_unknown
         },
     )
     val detail = (error as? WeatherError.Unknown)?.message?.takeIf { it.isNotBlank() }
     return if (detail != null) "$base: $detail" else base
-}
-
-private fun statusText(context: Context, updatedAt: Long?, error: WeatherError?): String = when {
-    error != null -> errorText(context, error)
-    updatedAt != null -> context.getString(
-        R.string.weather_updated_at,
-        DateFormat.getTimeFormat(context).format(Date(updatedAt)),
-    )
-    else -> context.getString(R.string.weather_not_loaded)
 }
 
 private fun clipboardText(context: Context): String? {
@@ -462,6 +475,7 @@ private fun openUrl(context: Context, url: String) {
 private fun <T> UnitPickerItem(
     title: Int,
     options: List<T>,
+    iconRes: Int,
     id: (T) -> String,
     symbol: (T) -> String,
     system: T,
@@ -474,7 +488,7 @@ private fun <T> UnitPickerItem(
     ConfigPickerItem(
         title = stringResource(title),
         selectedValue = current?.let(symbol) ?: "$systemLabel (${symbol(system)})",
-        iconRes = R.drawable.rounded_cloud_24,
+        iconRes = iconRes,
         modifier = Modifier.fillMaxWidth(),
     ) {
         SegmentedDropdownMenuItem(

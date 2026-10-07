@@ -66,10 +66,19 @@ You need Android Studio with a recent Android SDK (the project compiles against 
 ```bash
 git clone https://github.com/sameerasw/Overcast.git
 cd Overcast
-./gradlew assembleDebug
+./gradlew assembleGithubDebug
 ```
 
-The debug APK is written to `app/build/outputs/apk/debug/`.
+The debug APK is written to `app/build/outputs/apk/github/debug/`.
+
+### Flavors
+
+| Flavor | Use |
+| --- | --- |
+| `github` | Free build for GitHub releases, and the default while developing. Shows a banner in settings suggesting the Play Store version. |
+| `play` | Paid supporter build for the Play Store. Identical features, no banner, and the welcome screen says thank you. |
+
+Release builds: `./gradlew assembleGithubRelease` for the APK and `./gradlew bundlePlayRelease` for the Play bundle. Sign both with the same key so people can switch between them without losing data.
 
 ## Contributing
 

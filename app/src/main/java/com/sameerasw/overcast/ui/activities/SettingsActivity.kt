@@ -52,6 +52,8 @@ import com.sameerasw.overcast.ui.features.weather.WeatherExperimentsUI
 import com.sameerasw.overcast.ui.features.weather.WeatherSettingsUI
 import com.sameerasw.overcast.ui.modifiers.BlurDirection
 import com.sameerasw.overcast.ui.modifiers.progressiveBlur
+import com.sameerasw.overcast.BuildConfig
+import com.sameerasw.overcast.ui.components.SupportBanner
 import com.sameerasw.overcast.ui.theme.OvercastTheme
 
 class SettingsActivity : ComponentActivity() {
@@ -112,9 +114,12 @@ class SettingsActivity : ComponentActivity() {
                                 .verticalScroll(rememberScrollState())
                                 .padding(top = with(density) { topBarHeight.floatValue.toDp() }),
                         ) {
+                            if (!BuildConfig.PLAY_BUILD) {
+                                SupportBanner(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp))
+                            }
                             WeatherSettingsUI(modifier = Modifier.padding(top = 16.dp))
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(32.dp))
 
                             RoundedCardContainer(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 AboutSection(

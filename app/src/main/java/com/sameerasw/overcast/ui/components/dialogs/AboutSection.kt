@@ -180,6 +180,7 @@ fun AboutSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
@@ -190,6 +191,7 @@ fun AboutSection(
                             val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
                             context.startActivity(intent)
                         },
+                        modifier = Modifier.weight(1f),
                         shape =
                             RoundedCornerShape(
                                 topStart = 20.dp,
@@ -197,13 +199,15 @@ fun AboutSection(
                                 topEnd = 6.dp,
                                 bottomEnd = 6.dp,
                             ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_globe_24),
-                            contentDescription = stringResource(R.string.action_website),
+                            contentDescription = null,
                             modifier = Modifier.size(24.dp),
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.action_website))
                     }
 
                     Button(
@@ -229,7 +233,7 @@ fun AboutSection(
                             }
                         },
                         shape = RoundedCornerShape(6.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.rounded_mail_24),
@@ -252,7 +256,7 @@ fun AboutSection(
                                 topEnd = 20.dp,
                                 bottomEnd = 20.dp,
                             ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.brand_telegram),
@@ -263,209 +267,75 @@ fun AboutSection(
                 }
             }
 
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        HapticUtil.performUIHaptic(view)
-                        val websiteUrl = "https://buymeacoffee.com/sameerasw"
-                        val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.rounded_heart_smile_24),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_support))
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        HapticUtil.performUIHaptic(view)
-                        isOtherAppsExpanded = !isOtherAppsExpanded
-                    },
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.rounded_apps_24),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.label_other_apps))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        painter =
-                            painterResource(
-                                id =
-                                    if (isOtherAppsExpanded) {
-                                        R.drawable.rounded_keyboard_arrow_up_24
-                                    } else {
-                                        R.drawable.rounded_keyboard_arrow_down_24
-                                    },
-                            ),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = isOtherAppsExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                FlowRow(
+            Column(modifier = Modifier.fillMaxWidth()) {
+                RepoDetailsRow()
+                ContributorsCarousel(modifier = Modifier.padding(top = 12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    maxItemsInEachRow = 3,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     OutlinedButton(
                         onClick = {
                             HapticUtil.performUIHaptic(view)
-                            val websiteUrl = "https://github.com/sameerasw/essentials"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
+                            isOtherAppsExpanded = !isOtherAppsExpanded
                         },
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp, topEnd = 6.dp, bottomEnd = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.rounded_settings_24),
+                            painter = painterResource(id = R.drawable.rounded_apps_24),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_essentials))
+                        Text(stringResource(R.string.label_other_apps))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(
+                                id = if (isOtherAppsExpanded) R.drawable.rounded_keyboard_arrow_up_24 else R.drawable.rounded_keyboard_arrow_down_24,
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
-
                     OutlinedButton(
                         onClick = {
                             HapticUtil.performUIHaptic(view)
-                            val websiteUrl =
-                                "https://play.google.com/store/apps/details?id=com.sameerasw.airsync&hl=en"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
+                            showLicensesSheet = true
                         },
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp, topEnd = 20.dp, bottomEnd = 20.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.rounded_devices_24),
+                            painter = painterResource(id = R.drawable.rounded_code_24),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_airsync))
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            HapticUtil.performUIHaptic(view)
-                            val websiteUrl = "https://sameerasw.com/zen"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.rounded_web_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_zenzero))
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            HapticUtil.performUIHaptic(view)
-                            val websiteUrl = "https://github.com/sameerasw/canvas"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.rounded_draw_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_canvas))
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            HapticUtil.performUIHaptic(view)
-                            val websiteUrl = "https://github.com/sameerasw/tasks"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.rounded_task_alt_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_tasks))
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            HapticUtil.performUIHaptic(view)
-                            val websiteUrl = "https://github.com/sameerasw/Browser"
-                            val intent = Intent(Intent.ACTION_VIEW, websiteUrl.toUri())
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.outline_highlight_mouse_cursor_24),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.app_zero))
+                        Text(stringResource(R.string.action_licenses_and_credits))
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            RepoDetailsRow()
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            ContributorsCarousel()
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            OutlinedButton(
-                onClick = {
-                    HapticUtil.performUIHaptic(view)
-                    showLicensesSheet = true
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.rounded_code_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.action_licenses_and_credits))
+                AnimatedVisibility(
+                    visible = isOtherAppsExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        maxItemsInEachRow = 3,
+                    ) {
+                        OtherAppButton(R.drawable.app_icon_essentials, R.string.app_essentials, "https://github.com/sameerasw/essentials")
+                        OtherAppButton(R.drawable.app_icon_airsync, R.string.app_airsync, "https://play.google.com/store/apps/details?id=com.sameerasw.airsync&hl=en")
+                        OtherAppButton(R.drawable.app_icon_zenzero, R.string.app_zenzero, "https://sameerasw.com/zen")
+                        OtherAppButton(R.drawable.app_icon_canvas, R.string.app_canvas, "https://github.com/sameerasw/canvas")
+                        OtherAppButton(R.drawable.app_icon_tasks, R.string.app_tasks, "https://github.com/sameerasw/tasks")
+                    }
+                }
             }
         }
     }
@@ -474,5 +344,26 @@ fun AboutSection(
         LicensesBottomSheet(
             onDismissRequest = { showLicensesSheet = false },
         )
+    }
+}
+
+@Composable
+private fun OtherAppButton(iconRes: Int, nameRes: Int, url: String) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    OutlinedButton(
+        onClick = {
+            HapticUtil.performUIHaptic(view)
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+        },
+        modifier = Modifier.padding(horizontal = 4.dp),
+    ) {
+        Image(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp).clip(RoundedCornerShape(5.dp)),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(stringResource(nameRes))
     }
 }

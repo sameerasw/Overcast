@@ -1,5 +1,6 @@
 package com.sameerasw.overcast.ui.features.weather
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import com.sameerasw.overcast.R
 import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.ui.components.menus.SegmentedDropdownMenuItem
 import com.sameerasw.overcast.ui.core.cards.ConfigPickerItem
+import com.sameerasw.overcast.ui.core.cards.IconToggleItem
 import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
 import com.sameerasw.overcast.ui.core.pickers.SegmentedPicker
 import com.sameerasw.overcast.utils.HapticUtil
@@ -95,6 +97,15 @@ fun WeatherExperimentsUI(modifier: Modifier = Modifier) {
             },
             labelProvider = { if (it == "auto") context.getString(R.string.weather_sim_time_auto) else "$it°" },
             modifier = Modifier.fillMaxWidth(),
+        )
+        IconToggleItem(
+            iconRes = R.drawable.rounded_history_24,
+            title = stringResource(R.string.dev_reset_welcome_title),
+            showToggle = false,
+            onClick = {
+                settings.setOnboardingCompleted(false)
+                Toast.makeText(context, R.string.dev_reset_welcome_done, Toast.LENGTH_SHORT).show()
+            },
         )
     }
 }

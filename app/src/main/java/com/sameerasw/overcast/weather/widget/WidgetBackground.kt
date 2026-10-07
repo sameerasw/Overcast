@@ -15,7 +15,18 @@ enum class WidgetBackground(val id: String, @StringRes val labelRes: Int) {
     }
 }
 
-// Each placed widget remembers its own background.
+enum class WidgetForecast(val id: String, @StringRes val labelRes: Int) {
+    OFF("off", R.string.widget_forecast_off),
+    HOURLY("hourly", R.string.widget_forecast_hourly),
+    DAILY("daily", R.string.widget_forecast_daily),
+    ;
+
+    companion object {
+        fun fromId(id: String?): WidgetForecast = entries.firstOrNull { it.id == id } ?: OFF
+    }
+}
+
+// Each placed widget remembers its own background and forecast row.
 class WidgetConfigStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("overcast_widget_prefs", Context.MODE_PRIVATE)
 
@@ -25,8 +36,14 @@ class WidgetConfigStore(context: Context) {
         prefs.edit().putString(key(appWidgetId), background.id).apply()
     }
 
+    fun forecast(appWidgetId: Int): WidgetForecast = WidgetForecast.fromId(prefs.getString("forecast_$appWidgetId", null))
+
+    fun setForecast(appWidgetId: Int, forecast: WidgetForecast) {
+        prefs.edit().putString("forecast_$appWidgetId", forecast.id).apply()
+    }
+
     fun remove(appWidgetId: Int) {
-        prefs.edit().remove(key(appWidgetId)).apply()
+        prefs.edit().remove(key(appWidgetId)).remove("forecast_$appWidgetId").apply()
     }
 
     private fun key(appWidgetId: Int) = "background_$appWidgetId"

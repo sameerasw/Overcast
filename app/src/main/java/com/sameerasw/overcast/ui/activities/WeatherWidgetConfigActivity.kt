@@ -8,6 +8,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.Composable
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,6 +44,8 @@ import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
 import com.sameerasw.overcast.weather.widget.WidgetBackground
 import com.sameerasw.overcast.weather.widget.WidgetConfigStore
+import com.sameerasw.overcast.weather.widget.WidgetForecast
+import com.sameerasw.overcast.weather.widget.WeatherWidgetReceiver
 
 class WeatherWidgetConfigActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -54,12 +60,16 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
             finish()
             return
         }
+        // The hourly widget is already a forecast, so only the temperature widget gets the forecast row.
+        val supportsForecast = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)
+            ?.provider?.className == WeatherWidgetReceiver::class.java.name
         setContent {
             OvercastTheme {
                 val context = LocalContext.current
                 val view = LocalView.current
                 val store = remember { WidgetConfigStore(context) }
                 var selected by remember { mutableStateOf(store.background(appWidgetId)) }
+                var forecast by remember { mutableStateOf(store.forecast(appWidgetId)) }
                 val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
                 Scaffold(
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -74,6 +84,7 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                                     onClick = {
                                         HapticUtil.performVirtualKeyHaptic(view)
                                         store.setBackground(appWidgetId, selected)
+                                        if (supportsForecast) store.setForecast(appWidgetId, forecast)
                                         WeatherWidgetUpdater.updateAll(context)
                                         setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
                                         finish()
@@ -96,6 +107,7 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                             .padding(padding)
                             .padding(horizontal = 16.dp, vertical = 16.dp),
                     ) {
+                        SectionTitle(R.string.widget_config_section_background)
                         RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
                             SegmentedPicker(
                                 items = WidgetBackground.entries.toList(),
@@ -105,9 +117,32 @@ class WeatherWidgetConfigActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
+                        if (supportsForecast) {
+                            Spacer(Modifier.height(16.dp))
+                            SectionTitle(R.string.widget_config_section_forecast)
+                            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
+                                SegmentedPicker(
+                                    items = WidgetForecast.entries.toList(),
+                                    selectedItem = forecast,
+                                    onItemSelected = { forecast = it },
+                                    labelProvider = { context.getString(it.labelRes) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SectionTitle(res: Int) {
+    Text(
+        text = stringResource(res),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+    )
 }

@@ -97,12 +97,20 @@ private fun WeatherWidgetRoot() {
     val weather by WidgetHub.weather.collectAsState()
     val revision by WidgetHub.revision.collectAsState()
     val mode = remember(revision) { WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(glanceId)) }
+    val forecast = remember(revision) { WidgetConfigStore(context).forecast(GlanceAppWidgetManager(context).getAppWidgetId(glanceId)) }
     val current = weather ?: return
     val snapshot = current.snapshot
     val temperature = snapshot?.let { WeatherFormat.temperature(it.tempC, current.units.temperature) } ?: "--°"
     val subtitle = snapshot?.conditionText ?: context.getString(R.string.widget_weather_empty)
     val icon = snapshot?.let { current.style.icon(it.condition, it.isDay) } ?: current.style.icon(WeatherIconSlot.CLOUDY)
-    WeatherWidgetContent(temperature, subtitle, icon, current.style.tintable, mode, current)
+    val items = remember(current, forecast) {
+        when (forecast) {
+            WidgetForecast.HOURLY -> hourlyItems(context, current)
+            WidgetForecast.DAILY -> dailyItems(context, current)
+            WidgetForecast.OFF -> emptyList()
+        }
+    }
+    WeatherWidgetContent(temperature, subtitle, icon, current.style.tintable, mode, current, items)
 }
 
 @Composable
@@ -113,6 +121,7 @@ private fun WeatherWidgetContent(
     tintable: Boolean,
     mode: WidgetBackground,
     weather: WidgetWeather?,
+    forecastItems: List<ForecastItem> = emptyList(),
     background: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
@@ -124,11 +133,16 @@ private fun WeatherWidgetContent(
     
     val shadow = mode == WidgetBackground.NONE
     val padding = widgetPadding(mode)
-    val showSubtitle = size.height >= 72.dp
-    val subtitleHeight = if (showSubtitle) (size.height * 0.2f).coerceIn(24.dp, 34.dp) else 0.dp
+    // The forecast row only appears once the widget is tall enough to hold it alongside the temperature.
+    val showForecast = forecastItems.isNotEmpty() && size.height >= 140.dp
+    val forecastHeight = if (showForecast) (size.height * 0.36f).coerceIn(70.dp, 120.dp) else 0.dp
+    val forecastGap = if (showForecast) 6.dp else 0.dp
+    val topHeight = size.height - padding * 2 - forecastHeight - forecastGap
+    val showSubtitle = topHeight >= 72.dp
+    val subtitleHeight = if (showSubtitle) (topHeight * 0.2f).coerceIn(24.dp, 34.dp) else 0.dp
     val iconSize = subtitleHeight * 0.7f
     val tempWidth = ((size.width - padding * 2).value * density).toInt()
-    val tempHeight = ((size.height - padding * 2 - subtitleHeight).value * density).toInt()
+    val tempHeight = ((topHeight - subtitleHeight).value * density).toInt().coerceAtLeast(1)
     val bitmap = remember(temperature, tempWidth, tempHeight, textArgb, shadow) {
         WidgetTemperatureRenderer.render(context, temperature, tempWidth, tempHeight, textArgb, shadow = shadow)
     }
@@ -169,6 +183,17 @@ private fun WeatherWidgetContent(
                         contentDescription = subtitle,
                     )
                 }
+            }
+            if (showForecast) {
+                Spacer(GlanceModifier.height(forecastGap))
+                ForecastRow(
+                    items = forecastItems,
+                    tintable = tintable,
+                    mode = mode,
+                    width = size.width - padding * 2,
+                    height = forecastHeight,
+                    modifier = GlanceModifier.fillMaxWidth().height(forecastHeight),
+                )
             }
         }
     }

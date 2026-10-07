@@ -71,15 +71,6 @@ cd Overcast
 
 The debug APK is written to `app/build/outputs/apk/github/debug/`.
 
-### Flavors
-
-| Flavor | Use |
-| --- | --- |
-| `github` | Free build for GitHub releases, and the default while developing. Shows a banner in settings suggesting the Play Store version. |
-| `play` | Paid supporter build for the Play Store. Identical features, no banner, and the welcome screen says thank you. |
-
-Release builds: `./gradlew assembleGithubRelease` for the APK and `./gradlew bundlePlayRelease` for the Play bundle. Sign both with the same key so people can switch between them without losing data.
-
 ## Contributing
 
 Bug reports, feature requests and pull requests are welcome. Use the [issue templates](https://github.com/sameerasw/Overcast/issues/new/choose) to report a problem or suggest something.

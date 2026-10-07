@@ -236,7 +236,13 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         WeatherRepository.ensureLoaded(context)
         if (WeatherRepository.state.value.snapshot != null) delay(REFRESH_DELAY_MS)
         val needsLocation = settings.getWeatherLocationMode() != "manual" && !DeviceLocationSource.hasPermission(context)
-        if (needsLocation) requestLocation() else if (WeatherRepository.isStale(context)) WeatherRepository.refresh(context)
+        if (needsLocation) {
+            requestLocation()
+        } else {
+            val stale = WeatherRepository.isStale(context)
+            val moved = !stale && WeatherRepository.hasMoved(context)
+            if (stale || moved) WeatherRepository.refresh(context, force = moved)
+        }
     }
 
     val rainSurfaces = remember { androidx.compose.runtime.mutableStateMapOf<String, RainSurfaceSource>() }
@@ -261,16 +267,20 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                 onDismissRequest = { showLocations = false },
                 onSelectCurrent = {
                     settings.setWeatherLocationMode("device")
-                    if (DeviceLocationSource.hasPermission(context)) {
-                        scope.launch { WeatherRepository.refresh(context, force = true) }
-                    } else {
-                        requestLocation()
+                    val permitted = DeviceLocationSource.hasPermission(context)
+                    scope.launch {
+                        WeatherRepository.clear(context)
+                        if (permitted) WeatherRepository.refresh(context, force = true)
                     }
+                    if (!permitted) requestLocation()
                 },
                 onSelectPlace = { place ->
                     settings.setWeatherManualLocation(place.latitude, place.longitude, place.name)
                     settings.setWeatherLocationMode("manual")
-                    scope.launch { WeatherRepository.refresh(context, force = true) }
+                    scope.launch {
+                        WeatherRepository.clear(context)
+                        WeatherRepository.refresh(context, force = true)
+                    }
                 },
                 onTopChanged = { sheetTop.floatValue = it },
             )

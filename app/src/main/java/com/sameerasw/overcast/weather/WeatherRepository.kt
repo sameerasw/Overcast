@@ -1,6 +1,7 @@
 package com.sameerasw.overcast.weather
 
 import android.content.Context
+import android.location.Location
 import androidx.annotation.Keep
 import com.google.gson.Gson
 import com.sameerasw.overcast.data.repository.SettingsRepository
@@ -26,6 +27,7 @@ import java.io.File
 object WeatherRepository {
     private const val CACHE_FILE = "weather_cache.json"
     private const val MIN_INTERVAL_MS = 5 * 60_000L
+    private const val MOVED_THRESHOLD_M = 3_000f
     private const val MAX_LOCATION_AGE_MS = 3 * 60 * 60_000L
 
     private val gson = Gson()
@@ -87,7 +89,7 @@ object WeatherRepository {
             }
             _state.update { it.copy(loading = true) }
             val location = resolveLocation(app, config)
-                ?: if (fallbackToSaved) savedFallback(app) else null
+                ?: if (fallbackToSaved) fallbackLocation(app, config) else null
             if (location == null) {
                 val error = if (config.locationMode == WeatherLocationMode.DEVICE && !DeviceLocationSource.hasPermission(app)) {
                     WeatherError.LocationPermission
@@ -141,6 +143,20 @@ object WeatherRepository {
             }
             fresh
         }
+    }
+
+    private fun fallbackLocation(context: Context, config: WeatherConfig): WeatherLocation? =
+        if (config.locationMode == WeatherLocationMode.DEVICE) cache.lastDeviceLocation else savedFallback(context)
+
+    suspend fun hasMoved(context: Context): Boolean {
+        val app = context.applicationContext
+        ensureLoaded(app)
+        if (config(app).locationMode != WeatherLocationMode.DEVICE) return false
+        val last = cache.lastDeviceLocation ?: return false
+        val now = DeviceLocationSource.current(app) ?: return false
+        val result = FloatArray(1)
+        Location.distanceBetween(last.latitude, last.longitude, now.latitude, now.longitude, result)
+        return result[0] > MOVED_THRESHOLD_M
     }
 
     private fun savedFallback(context: Context): WeatherLocation? =

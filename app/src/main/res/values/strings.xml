@@ -42,6 +42,8 @@
     <string name="weather_search_city">Search for a city</string>
     <string name="weather_search_no_results">No cities found</string>
     <string name="weather_section_display">Display</string>
+    <string name="weather_section_screensaver">Screensaver</string>
+    <string name="screensaver_show_forecast">Show forecast</string>
     <string name="weather_section_units">Units</string>
     <string name="weather_section_source">Source</string>
     <string name="weather_sim_time_auto">Auto</string>

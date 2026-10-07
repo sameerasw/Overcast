@@ -35,6 +35,7 @@ class SettingsRepository(
         const val KEY_WEATHER_PRECIPITATION_UNIT = "weather_precipitation_unit"
         const val KEY_WEATHER_ICON_STYLE = "weather_icon_style"
         const val KEY_COMPATIBILITY_MODE = "compatibility_mode"
+        const val KEY_AMBIENT_FORECAST = "ambient_show_forecast"
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
@@ -149,6 +150,10 @@ class SettingsRepository(
         WeatherWidgetUpdater.updateAll(appContext)
         WeatherWidgetUpdater.refreshPreview(appContext)
     }
+
+    fun isAmbientForecastEnabled(): Boolean = getBoolean(KEY_AMBIENT_FORECAST, true)
+
+    fun setAmbientForecastEnabled(enabled: Boolean) = putBoolean(KEY_AMBIENT_FORECAST, enabled)
 
     fun isCompatibilityMode(): Boolean =
         if (prefs.contains(KEY_COMPATIBILITY_MODE)) getBoolean(KEY_COMPATIBILITY_MODE, false) else DeviceUtils.isLowEndDevice(appContext)

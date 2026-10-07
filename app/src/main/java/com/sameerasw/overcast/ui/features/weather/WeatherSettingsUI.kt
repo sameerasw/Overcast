@@ -93,6 +93,7 @@ fun WeatherSettingsUI(
     val weatherState by WeatherRepository.state.collectAsState()
 
     var compatibility by remember { mutableStateOf(settings.isCompatibilityMode()) }
+    var ambientForecast by remember { mutableStateOf(settings.isAmbientForecastEnabled()) }
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
     var refreshMinutes by remember { mutableIntStateOf(settings.getWeatherRefreshMinutes()) }
@@ -362,6 +363,20 @@ fun WeatherSettingsUI(
                         HapticUtil.performVirtualKeyHaptic(view)
                         weatherHaptics = it
                         settings.setWeatherHapticsEnabled(it)
+                    },
+                )
+            }
+
+            SectionTitle(R.string.weather_section_screensaver)
+            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_schedule_24,
+                    title = stringResource(R.string.screensaver_show_forecast),
+                    isChecked = ambientForecast,
+                    onCheckedChange = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        ambientForecast = it
+                        settings.setAmbientForecastEnabled(it)
                     },
                 )
             }

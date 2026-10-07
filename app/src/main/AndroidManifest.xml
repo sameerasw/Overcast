@@ -86,6 +86,21 @@
                 android:resource="@xml/hourly_widget_info" />
         </receiver>
 
+        <service
+            android:name=".weather.screensaver.OvercastDreamService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/dream" />
+        </service>
+
         <provider
             android:name=".weather.share.WeatherContentProvider"
             android:authorities="com.sameerasw.overcast.weather"

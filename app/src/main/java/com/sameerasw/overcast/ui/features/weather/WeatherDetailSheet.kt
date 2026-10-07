@@ -81,6 +81,8 @@ import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
@@ -311,7 +313,6 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                 onTopChanged = { sheetTop.floatValue = it },
             )
         }
-        val glassRain = effectSpec.layers.filterIsInstance<WeatherEffectLayer.Rain>().maxByOrNull { it.intensity }.takeUnless { sheetOpen }
         val density = LocalDensity.current
         val collapse = remember { mutableFloatStateOf(0f) }
         val scrollTick = remember { mutableIntStateOf(0) }
@@ -329,33 +330,8 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         DisposableEffect(Unit) {
             onDispose { window?.let { WindowCompat.getInsetsController(it, view).show(WindowInsetsCompat.Type.systemBars()) } }
         }
-        val sky = snapshot?.let { skyState(it, now) }
-        val skyHeightPx = with(density) { SKY_HEIGHT.toPx() }
-        val collapseShiftPx = with(density) { 60.dp.toPx() }
-        val fallbackYPx = with(density) { 150.dp.toPx() }
-        Box(Modifier.fillMaxSize().onSizeChanged { rootHeightPx.intValue = it.height }.rainOnGlass((glassRain?.intensity ?: 0f) * effectRamp, glassRain?.slant ?: 0f) {
-            if (sky == null) {
-                Offset(0.5f, fallbackYPx - collapse.floatValue * collapseShiftPx)
-            } else {
-                val t = sky.first
-                Offset(
-                    0.9f - 0.8f * t,
-                    skyHeightPx * (0.66f - 0.4f * kotlin.math.sin(Math.PI.toFloat() * t)) - collapse.floatValue * collapseShiftPx,
-                )
-            }
-        }) {
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                0f to palette.glow,
-                                0.4f to palette.glowSecondary,
-                                0.8f to palette.base,
-                                1f to palette.base,
-                            ),
-                        ),
-                )
+        Box(Modifier.fillMaxSize().onSizeChanged { rootHeightPx.intValue = it.height }.weatherGlass(effectSpec, snapshot, now, { collapse.floatValue }, effectRamp, !sheetOpen)) {
+                WeatherSkyBackground(snapshot, now, palette) { collapse.floatValue }
                 val topFadePx = if (headerBottom.floatValue > 0f) {
                     val expandedFade = with(density) { 36.dp.toPx() }
                     val collapsedFade = headerBottom.floatValue + with(density) { 40.dp.toPx() }
@@ -363,7 +339,6 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                 } else {
                     0f
                 }
-                snapshot?.let { SkyBody(it, now, { collapse.floatValue }) }
                 if (!effectSpec.isEmpty && effectRamp > 0f) {
                     val effectsBottomFadePx = WindowInsets.navigationBars.getBottom(density) + with(density) { 20.dp.toPx() }
                     WeatherEffects(
@@ -560,7 +535,10 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                 )
                             }
                             if (ambient.floatValue > 0f) {
-                                AmbientClock({ ambient.floatValue }, palette, Modifier.align(Alignment.BottomCenter))
+                                AmbientClock({ ambient.floatValue }, palette, Modifier.align(Alignment.TopCenter))
+                                if (settings.isAmbientForecastEnabled()) {
+                                    AmbientForecast({ ambient.floatValue }, snapshot, units.temperature, palette, Modifier.align(Alignment.BottomCenter))
+                                }
                             }
                         }
                     }
@@ -586,10 +564,10 @@ internal fun skyState(snapshot: WeatherSnapshot, now: Long): Pair<Float, Boolean
     return t to isSun
 }
 
-private val SKY_HEIGHT = 360.dp
+internal val SKY_HEIGHT = 360.dp
 
 @Composable
-private fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float) {
+internal fun SkyBody(snapshot: WeatherSnapshot, now: Long, collapse: () -> Float) {
     val (t, isSun) = skyState(snapshot, now) ?: return
     val hide = (1f - collapse() * 1.6f).coerceIn(0f, 1f)
     if (hide <= 0f) return
@@ -645,7 +623,7 @@ private fun Modifier.rainSurface(key: String, corner: Dp = 28.dp, mask: (() -> R
     return this.onGloballyPositioned { source.coordinates = it }
 }
 
-private val SIDE_PADDING = 20.dp
+internal val SIDE_PADDING = 20.dp
 private const val CONTENT_FADE_MS = 500
 private const val EFFECTS_DELAY_MS = 450L
 private const val EFFECTS_FADE_MS = 1800
@@ -704,7 +682,7 @@ internal fun temperatureFont(widthAxis: Int, weightAxis: Int): FontFamily =
     }
 
 @Composable
-private fun Header(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette, progress: Float, ambient: Float, modifier: Modifier) {
+internal fun Header(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette, progress: Float, ambient: Float, modifier: Modifier) {
     val number = WeatherFormat.temperature(snapshot.tempC, unit).removeSuffix("°")
     
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
@@ -944,7 +922,7 @@ private fun AlertCard(alert: WeatherAlert, palette: WeatherPalette, modifier: Mo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette) {
+internal fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: WeatherPalette) {
     if (snapshot.hourly.isEmpty()) return
     val context = LocalContext.current
     val hours = snapshot.hourly
@@ -1270,7 +1248,7 @@ private tailrec fun Context.findWindow(): Window? = when (this) {
 private const val AMBIENT_RANGE_DP = 260
 private const val AMBIENT_SETTLE_VELOCITY = 1200f
 
-private fun Modifier.ambientCenter(fraction: Float, fullHeightPx: Int): Modifier = layout { measurable, constraints ->
+internal fun Modifier.ambientCenter(fraction: Float, fullHeightPx: Int): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     val height = lerp(placeable.height.toFloat(), maxOf(fullHeightPx, placeable.height).toFloat(), fraction).roundToInt()
     layout(placeable.width, height) {
@@ -1289,7 +1267,7 @@ private suspend fun settleAmbient(state: MutableFloatState, target: Float, insta
 }
 
 @Composable
-private fun AmbientClock(ambient: () -> Float, palette: WeatherPalette, modifier: Modifier) {
+internal fun AmbientClock(ambient: () -> Float, palette: WeatherPalette, modifier: Modifier) {
     val context = LocalContext.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -1304,11 +1282,11 @@ private fun AmbientClock(ambient: () -> Float, palette: WeatherPalette, modifier
         text = text,
         color = palette.onBase,
         fontFamily = temperatureFont(70, 200),
-        fontSize = 56.sp,
+        fontSize = 40.sp,
         maxLines = 1,
         modifier = modifier
-            .navigationBarsPadding()
-            .padding(bottom = 40.dp)
+            .windowInsetsPadding(WindowInsets.statusBarsIgnoringVisibility)
+            .padding(top = AMBIENT_EDGE_GAP)
             .graphicsLayer {
                 val reveal = ((ambient() - 0.4f) / 0.6f).coerceIn(0f, 1f)
                 alpha = reveal

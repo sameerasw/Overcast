@@ -129,4 +129,20 @@
     <string name="permdesc_read_weather">Lets the app read the latest weather for your current or saved location from Overcast.</string>
     <string name="permgrouplab_weather">Weather</string>
     <string name="permgroupdesc_weather">access weather data from Overcast</string>
+    <string name="welcome_title">Welcome to Overcast</string>
+    <string name="welcome_developer_attribution">Made by sameerasw</string>
+    <string name="action_lets_begin">Let\'s begin</string>
+    <string name="onboarding_location_title">Location Preferences</string>
+    <string name="onboarding_location_subtitle">Allow location access, or search for a city instead. You can change this any time.</string>
+    <string name="onboarding_perm_location_title">Approximate location</string>
+    <string name="onboarding_perm_location_usage">Shows the weather where you are. Only your general area is used.</string>
+    <string name="onboarding_perm_background_title">Background location</string>
+    <string name="onboarding_perm_background_usage">Optional. Keeps widgets and the screensaver up to date when the app is closed.</string>
+    <string name="onboarding_search_title">Choose a city</string>
+    <string name="onboarding_search_usage">Or, pick a place instead.</string>
+    <string name="onboarding_search_action">Search</string>
+    <string name="onboarding_allow">Allow</string>
+    <string name="onboarding_finish">Finish</string>
+    <string name="dev_reset_welcome_title">Reset welcome</string>
+    <string name="dev_reset_welcome_done">Welcome will show again on next launch</string>
 </resources>

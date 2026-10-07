@@ -19,6 +19,7 @@ class SettingsRepository(
     companion object {
         const val PREFS_NAME = "overcast_prefs"
 
+        const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         const val KEY_DEVELOPER_MODE_ENABLED = "developer_mode_enabled"
 
         const val KEY_WEATHER_PROVIDER = "weather_provider"
@@ -72,6 +73,10 @@ class SettingsRepository(
     }
 
     fun putInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
+
+    fun isOnboardingCompleted(): Boolean = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+
+    fun setOnboardingCompleted(completed: Boolean) = putBoolean(KEY_ONBOARDING_COMPLETED, completed)
 
     fun isDeveloperModeEnabled(): Boolean = getBoolean(KEY_DEVELOPER_MODE_ENABLED, false)
     fun setDeveloperModeEnabled(enabled: Boolean) = putBoolean(KEY_DEVELOPER_MODE_ENABLED, enabled)

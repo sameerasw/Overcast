@@ -53,6 +53,7 @@
     <string name="weather_icon_style_rounded">Rounded</string>
     <string name="weather_icon_style_filled">Filled</string>
     <string name="weather_icon_style_meteocons">Meteocons</string>
+    <string name="weather_icon_style_weather_icons">Weather Icons</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>

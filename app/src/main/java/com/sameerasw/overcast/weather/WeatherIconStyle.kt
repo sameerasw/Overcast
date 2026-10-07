@@ -106,6 +106,26 @@ enum class WeatherIconStyle(
             WeatherIconSlot.THUNDERSTORM to R.drawable.meteocons_thunderstorm,
         ),
     ),
+    WEATHER_ICONS(
+        "weather_icons",
+        R.string.weather_icon_style_weather_icons,
+        true,
+        mapOf(
+            WeatherIconSlot.CLEAR_DAY to R.drawable.wi_day_sunny,
+            WeatherIconSlot.CLEAR_NIGHT to R.drawable.wi_night_clear,
+            WeatherIconSlot.PARTLY_CLOUDY_DAY to R.drawable.wi_day_cloudy,
+            WeatherIconSlot.PARTLY_CLOUDY_NIGHT to R.drawable.wi_night_alt_cloudy,
+            WeatherIconSlot.CLOUDY to R.drawable.wi_cloudy,
+            WeatherIconSlot.FOG to R.drawable.wi_fog,
+            WeatherIconSlot.DRIZZLE to R.drawable.wi_sprinkle,
+            WeatherIconSlot.RAIN to R.drawable.wi_rain,
+            WeatherIconSlot.HEAVY_RAIN to R.drawable.wi_rain_wind,
+            WeatherIconSlot.SLEET to R.drawable.wi_sleet,
+            WeatherIconSlot.SNOW to R.drawable.wi_snow,
+            WeatherIconSlot.HAIL to R.drawable.wi_hail,
+            WeatherIconSlot.THUNDERSTORM to R.drawable.wi_thunderstorm,
+        ),
+    ),
     ;
 
     @DrawableRes

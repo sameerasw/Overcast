@@ -114,6 +114,17 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                     context.getString(R.string.action_source_code) to "https://github.com/basmilius/weather-icons",
                 ),
             ),
+            LicenseSection(
+                title = "Weather Icons",
+                iconRes = R.drawable.rounded_thunderstorm_24,
+                description = "Weather icon set by Erik Flowers, available as an icon style.",
+                licenseType = "SIL OFL 1.1",
+                licenseColor = getLicenseColor("creative commons"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://erikflowers.github.io/weather-icons/",
+                    context.getString(R.string.action_source_code) to "https://github.com/erikflowers/weather-icons",
+                ),
+            ),
         )
     }
 

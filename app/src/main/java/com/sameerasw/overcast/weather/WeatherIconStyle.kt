@@ -220,3 +220,117 @@ enum class WeatherIconStyle(
         fun fromId(id: String?): WeatherIconStyle = entries.firstOrNull { it.id == id } ?: Default
     }
 }
+
+// The small glyphs on the detail tiles. Packs without a dedicated glyph reuse a neighbouring weather icon.
+enum class WeatherDetailSlot {
+    HUMIDITY,
+    WIND,
+    GUSTS,
+    RAIN_CHANCE,
+    PRECIPITATION,
+    UV,
+    PRESSURE,
+    VISIBILITY,
+    DEW_POINT,
+    CLOUD_COVER,
+}
+
+@DrawableRes
+fun WeatherIconStyle.detailIcon(slot: WeatherDetailSlot): Int = when (this) {
+        WeatherIconStyle.ROUNDED -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.rounded_water_drop_24
+            WeatherDetailSlot.WIND -> R.drawable.rounded_air_24
+            WeatherDetailSlot.GUSTS -> R.drawable.rounded_air_24
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.rounded_rainy_24
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.rounded_rainy_24
+            WeatherDetailSlot.UV -> R.drawable.rounded_wb_sunny_24
+            WeatherDetailSlot.PRESSURE -> R.drawable.rounded_cloud_24
+            WeatherDetailSlot.VISIBILITY -> R.drawable.rounded_visibility_24
+            WeatherDetailSlot.DEW_POINT -> R.drawable.rounded_water_drop_24
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.rounded_cloud_24
+        }
+        WeatherIconStyle.FILLED -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.filled_water_drop_24
+            WeatherDetailSlot.WIND -> R.drawable.filled_air_24
+            WeatherDetailSlot.GUSTS -> R.drawable.filled_air_24
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.filled_rainy_24
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.filled_rainy_24
+            WeatherDetailSlot.UV -> R.drawable.filled_wb_sunny_24
+            WeatherDetailSlot.PRESSURE -> R.drawable.filled_cloud_24
+            WeatherDetailSlot.VISIBILITY -> R.drawable.filled_visibility_24
+            WeatherDetailSlot.DEW_POINT -> R.drawable.filled_water_drop_24
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.filled_cloud_24
+        }
+        WeatherIconStyle.METEOCONS -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.meteocons_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.meteocons_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.meteocons_d_gusts
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.meteocons_d_rain_chance
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.meteocons_d_precipitation
+            WeatherDetailSlot.UV -> R.drawable.meteocons_d_uv
+            WeatherDetailSlot.PRESSURE -> R.drawable.meteocons_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.meteocons_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.meteocons_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.meteocons_cloudy
+        }
+        WeatherIconStyle.WEATHER_ICONS -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.wi_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.wi_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.wi_d_gusts
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.wi_d_rain_chance
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.wi_d_precipitation
+            WeatherDetailSlot.UV -> R.drawable.wi_d_uv
+            WeatherDetailSlot.PRESSURE -> R.drawable.wi_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.wi_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.wi_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.wi_d_cloud_cover
+        }
+        WeatherIconStyle.FLUENT_3D -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.fluent3d_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.fluent3d_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.fluent3d_d_gusts
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.fluent3d_heavy_rain
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.fluent3d_rain
+            WeatherDetailSlot.UV -> R.drawable.fluent3d_clear_day
+            WeatherDetailSlot.PRESSURE -> R.drawable.fluent3d_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.fluent3d_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.fluent3d_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.fluent3d_cloudy
+        }
+        WeatherIconStyle.NOTO_3D -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.noto3d_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.noto3d_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.noto3d_d_gusts
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.noto3d_heavy_rain
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.noto3d_rain
+            WeatherDetailSlot.UV -> R.drawable.noto3d_clear_day
+            WeatherDetailSlot.PRESSURE -> R.drawable.noto3d_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.noto3d_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.noto3d_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.noto3d_cloudy
+        }
+        WeatherIconStyle.PHOSPHOR -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.ph_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.ph_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.ph_d_wind
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.ph_heavy_rain
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.ph_rain
+            WeatherDetailSlot.UV -> R.drawable.ph_clear_day
+            WeatherDetailSlot.PRESSURE -> R.drawable.ph_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.ph_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.ph_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.ph_cloudy
+        }
+        WeatherIconStyle.TABLER -> when (slot) {
+            WeatherDetailSlot.HUMIDITY -> R.drawable.tb_d_humidity
+            WeatherDetailSlot.WIND -> R.drawable.tb_d_wind
+            WeatherDetailSlot.GUSTS -> R.drawable.tb_d_wind
+            WeatherDetailSlot.RAIN_CHANCE -> R.drawable.tb_heavy_rain
+            WeatherDetailSlot.PRECIPITATION -> R.drawable.tb_rain
+            WeatherDetailSlot.UV -> R.drawable.tb_clear_day
+            WeatherDetailSlot.PRESSURE -> R.drawable.tb_d_pressure
+            WeatherDetailSlot.VISIBILITY -> R.drawable.tb_d_visibility
+            WeatherDetailSlot.DEW_POINT -> R.drawable.tb_d_dew_point
+            WeatherDetailSlot.CLOUD_COVER -> R.drawable.tb_cloudy
+        }
+}

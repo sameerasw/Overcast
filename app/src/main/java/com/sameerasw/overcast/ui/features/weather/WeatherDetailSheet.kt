@@ -117,8 +117,10 @@ import com.sameerasw.overcast.weather.effects.WeatherEffects
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.model.DailyForecast
 import com.sameerasw.overcast.ui.components.LocalWeatherIconStyle
+import com.sameerasw.overcast.ui.components.WeatherDetailIcon
 import com.sameerasw.overcast.ui.components.WeatherIcon
 import com.sameerasw.overcast.weather.TemperatureUnit
+import com.sameerasw.overcast.weather.WeatherDetailSlot
 import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.WeatherUnits
 import com.sameerasw.overcast.weather.model.WeatherAlert
@@ -963,34 +965,34 @@ private fun DailySection(days: List<DailyForecast>, unit: TemperatureUnit, palet
     }
 }
 
-private class Detail(val icon: Int, val label: Int, val value: String)
+private class Detail(val slot: WeatherDetailSlot, val label: Int, val value: String)
 
 @Composable
 private fun DetailsSection(snapshot: WeatherSnapshot, units: WeatherUnits, palette: WeatherPalette, modifier: Modifier) {
     val extras = snapshot.extras
     val details = buildList {
-        add(Detail(R.drawable.rounded_water_drop_24, R.string.weather_detail_humidity, "${snapshot.humidity}%"))
+        add(Detail(WeatherDetailSlot.HUMIDITY, R.string.weather_detail_humidity, "${snapshot.humidity}%"))
         add(
             Detail(
-                R.drawable.rounded_air_24,
+                WeatherDetailSlot.WIND,
                 R.string.weather_detail_wind,
                 WeatherFormat.wind(snapshot.windKph, units.wind) + (extras?.windDirectionDeg?.let { " ${compass(it)}" } ?: ""),
             ),
         )
-        extras?.windGustKph?.let { add(Detail(R.drawable.rounded_air_24, R.string.weather_detail_gusts, WeatherFormat.wind(it, units.wind))) }
-        add(Detail(R.drawable.rounded_rainy_24, R.string.weather_detail_rain_chance, "${snapshot.chanceOfRain}%"))
+        extras?.windGustKph?.let { add(Detail(WeatherDetailSlot.GUSTS, R.string.weather_detail_gusts, WeatherFormat.wind(it, units.wind))) }
+        add(Detail(WeatherDetailSlot.RAIN_CHANCE, R.string.weather_detail_rain_chance, "${snapshot.chanceOfRain}%"))
         extras?.precipitationMm?.let {
-            add(Detail(R.drawable.rounded_rainy_24, R.string.weather_detail_precipitation, WeatherFormat.precipitation(it, units.precipitation)))
+            add(Detail(WeatherDetailSlot.PRECIPITATION, R.string.weather_detail_precipitation, WeatherFormat.precipitation(it, units.precipitation)))
         }
-        extras?.uvIndex?.let { add(Detail(R.drawable.rounded_wb_sunny_24, R.string.weather_detail_uv, it.roundToInt().toString())) }
+        extras?.uvIndex?.let { add(Detail(WeatherDetailSlot.UV, R.string.weather_detail_uv, it.roundToInt().toString())) }
         extras?.pressureHpa?.let {
-            add(Detail(R.drawable.rounded_cloud_24, R.string.weather_detail_pressure, WeatherFormat.pressure(it, units.pressure)))
+            add(Detail(WeatherDetailSlot.PRESSURE, R.string.weather_detail_pressure, WeatherFormat.pressure(it, units.pressure)))
         }
         extras?.visibilityKm?.let {
-            add(Detail(R.drawable.rounded_visibility_24, R.string.weather_detail_visibility, WeatherFormat.distance(it, units.distance)))
+            add(Detail(WeatherDetailSlot.VISIBILITY, R.string.weather_detail_visibility, WeatherFormat.distance(it, units.distance)))
         }
-        extras?.dewPointC?.let { add(Detail(R.drawable.rounded_water_drop_24, R.string.weather_detail_dew_point, WeatherFormat.temperature(it, units.temperature))) }
-        extras?.cloudCover?.let { add(Detail(R.drawable.rounded_cloud_24, R.string.weather_detail_cloud_cover, "$it%")) }
+        extras?.dewPointC?.let { add(Detail(WeatherDetailSlot.DEW_POINT, R.string.weather_detail_dew_point, WeatherFormat.temperature(it, units.temperature))) }
+        extras?.cloudCover?.let { add(Detail(WeatherDetailSlot.CLOUD_COVER, R.string.weather_detail_cloud_cover, "$it%")) }
     }
     Column(modifier) {
         Surface(color = palette.card, shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.rainSurface("details").fillMaxWidth()) {
@@ -1013,7 +1015,7 @@ private fun DetailTile(detail: Detail, palette: WeatherPalette, modifier: Modifi
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(painterResource(detail.icon), null, tint = palette.accent, modifier = Modifier.size(26.dp))
+        WeatherDetailIcon(detail.slot, palette.accent, Modifier.size(26.dp))
         Column {
             Text(stringResource(detail.label), color = palette.onBaseMuted, style = MaterialTheme.typography.labelMedium)
             Text(detail.value, color = palette.onBase, style = MaterialTheme.typography.titleMedium, maxLines = 1)

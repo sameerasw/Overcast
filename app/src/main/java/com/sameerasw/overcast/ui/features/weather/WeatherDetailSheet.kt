@@ -292,11 +292,22 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             ),
                         ),
                 )
+                val topFadePx = if (headerBottom.floatValue > 0f) {
+                    val expandedFade = with(density) { 36.dp.toPx() }
+                    val collapsedFade = headerBottom.floatValue + with(density) { 40.dp.toPx() }
+                    expandedFade + (collapsedFade - expandedFade) * collapse.floatValue
+                } else {
+                    0f
+                }
                 snapshot?.let { SkyBody(it, now, { collapse.floatValue }) }
                 if (!effectSpec.isEmpty) {
+                    val effectsBottomFadePx = WindowInsets.navigationBars.getBottom(density) + with(density) { 20.dp.toPx() }
                     WeatherEffects(
                         spec = effectSpec,
-                        modifier = Modifier.matchParentSize(),
+                        modifier = Modifier
+                            .matchParentSize()
+                            .progressiveBlur(blurRadius = 40f, height = topFadePx, direction = BlurDirection.TOP, showGradientOverlay = false)
+                            .progressiveBlur(blurRadius = 14f, height = effectsBottomFadePx, direction = BlurDirection.BOTTOM, showGradientOverlay = false),
                         strength = 1.7f,
                         haptics = effectHaptics,
                         surfaces = {
@@ -310,6 +321,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                     RainSurface("locations-sheet", Rect(0f, top, screenWidthPx, screenHeightPx), sheetCornerPx, 0f, screenWidthPx)
                             }
                         },
+                        cover = { rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) } },
                         scrollTick = { scrollTick[0] },
                     )
                 }
@@ -361,11 +373,10 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             }
                         }
                         Spacer(Modifier.height(24.dp))
-                        SettingsButton(palette, onOpenSettings, Modifier.padding(horizontal = SIDE_PADDING))
+                        SettingsButton(palette, onOpenSettings, Modifier.padding(horizontal = SIDE_PADDING).rainSurface("settings-button", corner = 20.dp))
                     }
                 } else {
                     var topPx by headerBottom
-                    val topFadePx = if (topPx > 0f) topPx + with(density) { 40.dp.toPx() } else 0f
                     val bottomFadePx = WindowInsets.navigationBars.getBottom(density) + with(density) { 20.dp.toPx() }
                     val pullState = rememberPullToRefreshState()
                     PullToRefreshBox(
@@ -434,7 +445,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                                     DetailsSection(snapshot, units, palette, Modifier.padding(horizontal = SIDE_PADDING))
                                     SunSection(snapshot, palette, Modifier.padding(horizontal = SIDE_PADDING))
                                     Footer(
-                                        modifier = Modifier.padding(horizontal = SIDE_PADDING),
+                                        modifier = Modifier.padding(horizontal = SIDE_PADDING).rainSurface("footer"),
                                         snapshot = snapshot,
                                         error = state.error,
                                         palette = palette,

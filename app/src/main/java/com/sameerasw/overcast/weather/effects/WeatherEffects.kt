@@ -12,15 +12,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +70,7 @@ fun WeatherEffects(
     clearTop: Dp = 0.dp,
     haptics: WeatherEffectHaptics? = null,
     surfaces: () -> List<RainSurface> = { emptyList() },
+    cover: () -> List<RainSurface> = surfaces,
     scrollTick: () -> Int = { 0 },
 ) {
     if (spec.isEmpty) return
@@ -74,8 +79,10 @@ fun WeatherEffects(
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
     val currentHaptics by rememberUpdatedState(haptics)
     val currentSurfaces by rememberUpdatedState(surfaces)
+    val currentCover by rememberUpdatedState(cover)
     val currentScrollTick by rememberUpdatedState(scrollTick)
     val snowState = remember(spec) { SnowState() }
+    val coverPath = remember { Path() }
     val layers = remember(spec) {
         spec.layers.mapIndexed { index, layer ->
             val field = ParticleField.create(particleCount(layer), seed = index * 7919 + 17)
@@ -131,6 +138,13 @@ fun WeatherEffects(
             },
     ) {
         val t = time.floatValue
+        // The effects live in the background: whatever UI card sits over them hides them rather than letting them show through.
+        coverPath.rewind()
+        currentCover().forEach { surface ->
+            val r = min(surface.cornerRadius, min(surface.rect.width, surface.rect.height) / 2f)
+            coverPath.addRoundRect(RoundRect(surface.rect, CornerRadius(r, r)))
+        }
+        clipPath(coverPath, ClipOp.Difference) {
         layers.forEach { state ->
             when (val layer = state.layer) {
                 is WeatherEffectLayer.Rain -> drawRain(state, layer, t, strength, if (snowState.settled) surfaces() else emptyList())
@@ -142,6 +156,7 @@ fun WeatherEffects(
                 is WeatherEffectLayer.Stars -> drawStars(state.field, t, layer.intensity, strength)
                 is WeatherEffectLayer.Lightning -> drawLightning(t, layer.intensity, strength)
             }
+        }
         }
     }
 }

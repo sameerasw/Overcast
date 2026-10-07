@@ -82,6 +82,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.play.services.location)
     implementation(libs.gson)

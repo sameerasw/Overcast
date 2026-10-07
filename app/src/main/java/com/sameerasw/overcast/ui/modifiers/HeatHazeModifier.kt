@@ -3,6 +3,7 @@ package com.sameerasw.overcast.ui.modifiers
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import com.sameerasw.overcast.utils.CompatibilityMode
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,7 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 
 @Composable
 fun Modifier.heatHaze(strength: Float): Modifier {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || strength <= 0f) return this
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || CompatibilityMode.enabled.value || strength <= 0f) return this
     return HeatHazeApi33.apply(this, strength.coerceIn(0f, 1f), LocalDensity.current.density)
 }
 

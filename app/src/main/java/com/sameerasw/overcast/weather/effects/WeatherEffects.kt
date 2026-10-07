@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.sameerasw.overcast.utils.CompatibilityMode
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
@@ -75,6 +76,10 @@ fun WeatherEffects(
     scrollTick: () -> Int = { 0 },
 ) {
     if (spec.isEmpty) return
+    if (CompatibilityMode.enabled.value) {
+        StillWeatherEffects(spec, modifier, strength, clearTop, cover, scrollTick)
+        return
+    }
     val density = LocalDensity.current
     val time = remember { mutableFloatStateOf(0f) }
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
@@ -122,21 +127,7 @@ fun WeatherEffects(
         modifier
             .onSizeChanged { canvasSize = it }
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                val top = clearTop.toPx().coerceAtMost(size.height)
-                if (top <= 0f) return@drawWithContent
-                // Nothing may show above the clearance line, so the camera cutout never gets lit.
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to Color.Black,
-                        startY = top,
-                        endY = (top + CLEAR_FADE.toPx()).coerceAtMost(size.height),
-                    ),
-                    blendMode = BlendMode.DstIn,
-                )
-            },
+            .clearTopMask(clearTop),
     ) {
         val t = time.floatValue
         // Falling particles are hidden behind UI cards; ambient layers (clouds, fog, glow, stars) stay visible through the translucent cards.
@@ -164,6 +155,75 @@ fun WeatherEffects(
             }
         }
     }
+}
+
+private fun Modifier.clearTopMask(clearTop: Dp): Modifier = drawWithContent {
+    drawContent()
+    val top = clearTop.toPx().coerceAtMost(size.height)
+    if (top <= 0f) return@drawWithContent
+    drawRect(
+        brush = Brush.verticalGradient(
+            0f to Color.Transparent,
+            1f to Color.Black,
+            startY = top,
+            endY = (top + CLEAR_FADE.toPx()).coerceAtMost(size.height),
+        ),
+        blendMode = BlendMode.DstIn,
+    )
+}
+
+@Composable
+private fun StillWeatherEffects(
+    spec: WeatherEffectSpec,
+    modifier: Modifier,
+    strength: Float,
+    clearTop: Dp,
+    cover: () -> List<RainSurface>,
+    scrollTick: () -> Int,
+) {
+    val coverPath = remember { Path() }
+    Canvas(
+        modifier
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .clearTopMask(clearTop),
+    ) {
+        scrollTick()
+        coverPath.rewind()
+        cover().forEach { surface ->
+            val r = min(surface.cornerRadius, min(surface.rect.width, surface.rect.height) / 2f)
+            coverPath.addRoundRect(RoundRect(surface.rect, CornerRadius(r, r)))
+        }
+        drawWeatherEffectsStill(spec, strength, areaScale = 1f, cover = coverPath)
+    }
+}
+
+internal fun DrawScope.drawWeatherEffectsStill(spec: WeatherEffectSpec, strength: Float, areaScale: Float, cover: Path? = null) {
+    val snowState = SnowState()
+    spec.layers.forEachIndexed { index, layer ->
+        val count = when (layer) {
+            is WeatherEffectLayer.Rain, is WeatherEffectLayer.Snow, is WeatherEffectLayer.Hail, is WeatherEffectLayer.Stars ->
+                (particleCount(layer) * areaScale).toInt().coerceAtLeast(4)
+            else -> particleCount(layer)
+        }
+        val state = LayerState(layer, ParticleField.create(count, seed = index * 7919 + 17))
+        when (layer) {
+            is WeatherEffectLayer.Rain -> behindCards(cover) { drawRain(state, layer, STILL_TIME_S, strength, emptyList()) }
+            is WeatherEffectLayer.Snow -> behindCards(cover) { drawSnow(state.field, STILL_TIME_S, layer.intensity, strength, emptyList(), snowState) }
+            is WeatherEffectLayer.Hail -> behindCards(cover) { drawHail(state, layer.intensity, STILL_TIME_S, strength) }
+            is WeatherEffectLayer.Clouds -> drawClouds(state.field, STILL_TIME_S, layer.intensity, strength, fog = false)
+            is WeatherEffectLayer.Fog -> drawClouds(state.field, STILL_TIME_S, layer.intensity, strength, fog = true)
+            is WeatherEffectLayer.SunGlow -> drawSunGlow(STILL_TIME_S, layer.intensity, strength)
+            is WeatherEffectLayer.Stars -> drawStars(state.field, STILL_TIME_S, layer.intensity, strength)
+            // A full-strength flash would wash the whole widget out, so the frozen frame is the flash at a gentle strength.
+            is WeatherEffectLayer.Lightning -> drawLightning(lightningStrike(0) + 0.05f, layer.intensity, strength * 0.35f)
+        }
+    }
+}
+
+private const val STILL_TIME_S = 4.2f
+
+private fun DrawScope.behindCards(cover: Path?, block: DrawScope.() -> Unit) {
+    if (cover == null) block() else clipPath(cover, ClipOp.Difference, block)
 }
 
 private fun particleCount(layer: WeatherEffectLayer): Int = when (layer) {

@@ -2,13 +2,17 @@ package com.sameerasw.overcast.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.sameerasw.overcast.utils.CompatibilityMode
+import com.sameerasw.overcast.utils.DeviceUtils
 import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
+import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
 import com.sameerasw.overcast.weather.effects.WeatherSimulationPreset
 
 class SettingsRepository(
     context: Context,
 ) {
+    private val appContext = context.applicationContext
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -30,6 +34,8 @@ class SettingsRepository(
         const val KEY_WEATHER_DISTANCE_UNIT = "weather_distance_unit"
         const val KEY_WEATHER_PRECIPITATION_UNIT = "weather_precipitation_unit"
         const val KEY_WEATHER_ICON_STYLE = "weather_icon_style"
+        const val KEY_COMPATIBILITY_MODE = "compatibility_mode"
+        const val KEY_AMBIENT_FORECAST = "ambient_show_forecast"
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
@@ -51,9 +57,19 @@ class SettingsRepository(
 
     fun getInt(key: String, default: Int = 0): Int = prefs.getInt(key, default)
 
-    fun putBoolean(key: String, value: Boolean) = prefs.edit().putBoolean(key, value).apply()
+    fun putBoolean(key: String, value: Boolean) {
+        prefs.edit().putBoolean(key, value).apply()
+        refreshWidgetsIfSimulation(key)
+    }
 
-    fun putString(key: String, value: String?) = prefs.edit().putString(key, value).apply()
+    fun putString(key: String, value: String?) {
+        prefs.edit().putString(key, value).apply()
+        refreshWidgetsIfSimulation(key)
+    }
+
+    private fun refreshWidgetsIfSimulation(key: String) {
+        if (key.startsWith("debug_") || key == KEY_DEVELOPER_MODE_ENABLED) WeatherWidgetUpdater.updateAll(appContext)
+    }
 
     fun putInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
 
@@ -111,7 +127,10 @@ class SettingsRepository(
         putString(KEY_WEATHER_MANUAL_LOCATION, "$latitude|$longitude|${name.replace("|", " ")}")
 
     fun getWeatherUnits(): String = getString(KEY_WEATHER_UNITS, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
-    fun setWeatherUnits(units: String) = putString(KEY_WEATHER_UNITS, units)
+    fun setWeatherUnits(units: String) {
+        putString(KEY_WEATHER_UNITS, units)
+        WeatherWidgetUpdater.updateAll(appContext)
+    }
 
     fun getWindUnit(): String = getString(KEY_WEATHER_WIND_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
     fun setWindUnit(unit: String) = putString(KEY_WEATHER_WIND_UNIT, unit)
@@ -126,7 +145,23 @@ class SettingsRepository(
     fun setPrecipitationUnit(unit: String) = putString(KEY_WEATHER_PRECIPITATION_UNIT, unit)
 
     fun getWeatherIconStyle(): String = getString(KEY_WEATHER_ICON_STYLE, null) ?: WeatherIconStyle.Default.id
-    fun setWeatherIconStyle(id: String) = putString(KEY_WEATHER_ICON_STYLE, id)
+    fun setWeatherIconStyle(id: String) {
+        putString(KEY_WEATHER_ICON_STYLE, id)
+        WeatherWidgetUpdater.updateAll(appContext)
+        WeatherWidgetUpdater.refreshPreview(appContext)
+    }
+
+    fun isAmbientForecastEnabled(): Boolean = getBoolean(KEY_AMBIENT_FORECAST, true)
+
+    fun setAmbientForecastEnabled(enabled: Boolean) = putBoolean(KEY_AMBIENT_FORECAST, enabled)
+
+    fun isCompatibilityMode(): Boolean =
+        if (prefs.contains(KEY_COMPATIBILITY_MODE)) getBoolean(KEY_COMPATIBILITY_MODE, false) else DeviceUtils.isLowEndDevice(appContext)
+
+    fun setCompatibilityMode(enabled: Boolean) {
+        putBoolean(KEY_COMPATIBILITY_MODE, enabled)
+        CompatibilityMode.enabled.value = enabled
+    }
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)
     fun setWeatherRefreshMinutes(minutes: Int) = putInt(KEY_WEATHER_REFRESH_MINUTES, minutes)

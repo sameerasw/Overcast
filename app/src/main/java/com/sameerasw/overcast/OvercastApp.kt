@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherRepository
+import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
 import com.sameerasw.overcast.weather.work.WeatherScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ class OvercastApp : Application() {
         // Warm the cached snapshot and set up background work off the main thread so the first frames aren't competing with it.
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             WeatherRepository.ensureLoaded(applicationContext)
+            WeatherWidgetUpdater.refreshPreview(applicationContext)
             WeatherScheduler.schedule(applicationContext, WeatherRepository.config(applicationContext).refreshIntervalMinutes)
         }
     }

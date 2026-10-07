@@ -134,6 +134,7 @@ class SettingsRepository(
     fun setWeatherIconStyle(id: String) {
         putString(KEY_WEATHER_ICON_STYLE, id)
         WeatherWidgetUpdater.updateAll(appContext)
+        WeatherWidgetUpdater.refreshPreview(appContext)
     }
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)

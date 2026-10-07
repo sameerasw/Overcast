@@ -2,6 +2,7 @@ package com.sameerasw.overcast.weather.widget
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -15,10 +16,13 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
+import androidx.glance.background
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.layout.Alignment
@@ -66,6 +70,21 @@ class WeatherWidget : GlanceAppWidget() {
             WeatherWidgetContent(temperature, subtitle, icon, style.tintable)
         }
     }
+
+    // Android 15+ asks for this when it shows the widget picker; it follows the chosen icon style.
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        val style = WeatherIconStyle.fromId(SettingsRepository(context).getWeatherIconStyle())
+        val icon = style.icon(WeatherIconSlot.PARTLY_CLOUDY_DAY)
+        provideContent {
+            WeatherWidgetContent(
+                temperature = "21°",
+                subtitle = "Partly cloudy",
+                icon = icon,
+                tintable = style.tintable,
+                background = GlanceModifier.background(ColorProvider(Color(0xFF14609F))).cornerRadius(28.dp),
+            )
+        }
+    }
 }
 
 class WeatherWidgetReceiver : GlanceAppWidgetReceiver() {
@@ -73,7 +92,13 @@ class WeatherWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 @Composable
-private fun WeatherWidgetContent(temperature: String, subtitle: String, icon: Int, tintable: Boolean) {
+private fun WeatherWidgetContent(
+    temperature: String,
+    subtitle: String,
+    icon: Int,
+    tintable: Boolean,
+    background: GlanceModifier = GlanceModifier,
+) {
     val context = LocalContext.current
     val size = LocalSize.current
     val density = context.resources.displayMetrics.density
@@ -87,7 +112,7 @@ private fun WeatherWidgetContent(temperature: String, subtitle: String, icon: In
         WidgetTemperatureRenderer.render(context, temperature, tempWidth, tempHeight, android.graphics.Color.WHITE)
     }
     Column(
-        modifier = GlanceModifier.fillMaxSize().padding(padding).clickable(actionStartActivity(Intent(context, WeatherActivity::class.java))),
+        modifier = background.fillMaxSize().padding(padding).clickable(actionStartActivity(Intent(context, WeatherActivity::class.java))),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -131,5 +156,12 @@ object WeatherWidgetUpdater {
     fun updateAll(context: Context) {
         val app = context.applicationContext
         scope.launch { runCatching { WeatherWidget().updateAll(app) } }
+    }
+
+    // Generated previews only exist on Android 15+, and the system rate-limits how often they can be set.
+    fun refreshPreview(context: Context) {
+        if (Build.VERSION.SDK_INT < 35) return
+        val app = context.applicationContext
+        scope.launch { runCatching { GlanceAppWidgetManager(app).setWidgetPreviews(WeatherWidgetReceiver::class) } }
     }
 }

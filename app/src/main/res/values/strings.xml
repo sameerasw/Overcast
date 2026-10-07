@@ -55,6 +55,7 @@
     <string name="weather_icon_style_meteocons">Meteocons</string>
     <string name="weather_icon_style_weather_icons">Weather Icons</string>
     <string name="weather_icon_style_fluent_3d">Fluent 3D</string>
+    <string name="weather_icon_style_noto_3d">Noto 3D</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>

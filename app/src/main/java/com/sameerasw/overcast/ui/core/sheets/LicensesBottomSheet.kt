@@ -135,6 +135,16 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                     context.getString(R.string.action_source_code) to "https://github.com/microsoft/fluentui-emoji",
                 ),
             ),
+            LicenseSection(
+                title = "Noto Emoji 3D",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "3D weather emoji by Google, available as an icon style. Some icons are composed from several emoji.",
+                licenseType = "Apache 2.0",
+                licenseColor = getLicenseColor("apache"),
+                links = listOf(
+                    context.getString(R.string.action_source_code) to "https://github.com/googlefonts/noto-emoji",
+                ),
+            ),
         )
     }
 

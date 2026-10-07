@@ -19,8 +19,7 @@ object DeviceLocationSource {
     private const val MAX_LAST_KNOWN_AGE_MS = 60 * 60_000L
 
     fun hasPermission(context: Context): Boolean =
-        context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     // Coarse, one-shot fix. Falls back to the last known location, which is what background refreshes usually get.
     @SuppressLint("MissingPermission")

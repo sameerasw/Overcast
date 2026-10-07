@@ -139,25 +139,29 @@ fun WeatherEffects(
             },
     ) {
         val t = time.floatValue
-        // The effects live in the background: whatever UI card sits over them hides them rather than letting them show through.
+        // Falling particles are hidden behind UI cards; ambient layers (clouds, fog, glow, stars) stay visible through the translucent cards.
         coverPath.rewind()
         currentCover().forEach { surface ->
             val r = min(surface.cornerRadius, min(surface.rect.width, surface.rect.height) / 2f)
             coverPath.addRoundRect(RoundRect(surface.rect, CornerRadius(r, r)))
         }
-        clipPath(coverPath, ClipOp.Difference) {
         layers.forEach { state ->
             when (val layer = state.layer) {
-                is WeatherEffectLayer.Rain -> drawRain(state, layer, t, strength, if (snowState.settled) surfaces() else emptyList())
-                is WeatherEffectLayer.Snow -> drawSnow(state.field, t, layer.intensity, strength, if (snowState.settled) surfaces() else emptyList(), snowState)
-                is WeatherEffectLayer.Hail -> drawHail(state, layer.intensity, t, strength)
+                is WeatherEffectLayer.Rain -> clipPath(coverPath, ClipOp.Difference) {
+                    drawRain(state, layer, t, strength, if (snowState.settled) surfaces() else emptyList())
+                }
+                is WeatherEffectLayer.Snow -> clipPath(coverPath, ClipOp.Difference) {
+                    drawSnow(state.field, t, layer.intensity, strength, if (snowState.settled) surfaces() else emptyList(), snowState)
+                }
+                is WeatherEffectLayer.Hail -> clipPath(coverPath, ClipOp.Difference) {
+                    drawHail(state, layer.intensity, t, strength)
+                }
                 is WeatherEffectLayer.Clouds -> drawClouds(state.field, t, layer.intensity, strength, fog = false)
                 is WeatherEffectLayer.Fog -> drawClouds(state.field, t, layer.intensity, strength, fog = true)
                 is WeatherEffectLayer.SunGlow -> drawSunGlow(t, layer.intensity, strength)
                 is WeatherEffectLayer.Stars -> drawStars(state.field, t, layer.intensity, strength)
                 is WeatherEffectLayer.Lightning -> drawLightning(t, layer.intensity, strength)
             }
-        }
         }
     }
 }

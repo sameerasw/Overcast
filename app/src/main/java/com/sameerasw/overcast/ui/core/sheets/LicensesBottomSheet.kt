@@ -103,6 +103,17 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                 licenseColor = getLicenseColor("creative commons"),
                 links = listOf(context.getString(R.string.action_website) to "https://open-meteo.com"),
             ),
+            LicenseSection(
+                title = "Meteocons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Weather icon set by Bas Milius, available as an icon style.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://meteocons.com",
+                    context.getString(R.string.action_source_code) to "https://github.com/basmilius/weather-icons",
+                ),
+            ),
         )
     }
 

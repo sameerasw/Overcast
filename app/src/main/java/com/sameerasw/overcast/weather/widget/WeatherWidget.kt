@@ -4,6 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.compose.runtime.Composable
+import com.sameerasw.overcast.weather.model.WeatherSnapshot
+import androidx.glance.layout.Box
+import androidx.glance.GlanceTheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -66,8 +70,13 @@ class WeatherWidget : GlanceAppWidget() {
         val temperature = snapshot?.let { WeatherFormat.temperature(it.tempC, units.temperature) } ?: "--°"
         val subtitle = snapshot?.conditionText ?: context.getString(R.string.widget_weather_empty)
         val icon = snapshot?.let { style.icon(it.condition, it.isDay) } ?: style.icon(WeatherIconSlot.CLOUDY)
+        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        val mode = WidgetConfigStore(context).background(appWidgetId)
+        val now = System.currentTimeMillis()
         provideContent {
-            WeatherWidgetContent(temperature, subtitle, icon, style.tintable)
+            GlanceTheme {
+                WeatherWidgetContent(temperature, subtitle, icon, style.tintable, mode, snapshot, now)
+            }
         }
     }
 
@@ -76,6 +85,7 @@ class WeatherWidget : GlanceAppWidget() {
         val style = WeatherIconStyle.fromId(SettingsRepository(context).getWeatherIconStyle())
         val icon = style.icon(WeatherIconSlot.PARTLY_CLOUDY_DAY)
         provideContent {
+            GlanceTheme {
             WeatherWidgetContent(
                 temperature = "21°",
                 subtitle = "Partly cloudy",
@@ -83,12 +93,19 @@ class WeatherWidget : GlanceAppWidget() {
                 tintable = style.tintable,
                 background = GlanceModifier.background(ColorProvider(Color(0xFF14609F))).cornerRadius(28.dp),
             )
+            }
         }
     }
 }
 
 class WeatherWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WeatherWidget()
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        val store = WidgetConfigStore(context)
+        appWidgetIds.forEach { store.remove(it) }
+    }
 }
 
 @Composable
@@ -97,53 +114,82 @@ private fun WeatherWidgetContent(
     subtitle: String,
     icon: Int,
     tintable: Boolean,
+    mode: WidgetBackground = WidgetBackground.NONE,
+    snapshot: WeatherSnapshot? = null,
+    now: Long = 0L,
     background: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
     val size = LocalSize.current
     val density = context.resources.displayMetrics.density
-    val white = ColorProvider(Color.White)
-    val padding = 8.dp
+    val textColor = if (mode == WidgetBackground.MATERIAL) GlanceTheme.colors.onSurface else ColorProvider(Color.White)
+    val textArgb = if (mode == WidgetBackground.MATERIAL) textColor.getColor(context).toArgb() else android.graphics.Color.WHITE
+    val padding = if (mode == WidgetBackground.NONE) 8.dp else 14.dp
+    val corner = 28.dp
     val showSubtitle = size.height >= 72.dp
     val subtitleHeight = if (showSubtitle) (size.height * 0.2f).coerceIn(24.dp, 34.dp) else 0.dp
     val tempWidth = ((size.width - padding * 2).value * density).toInt()
     val tempHeight = ((size.height - padding * 2 - subtitleHeight).value * density).toInt()
-    val bitmap = remember(temperature, tempWidth, tempHeight) {
-        WidgetTemperatureRenderer.render(context, temperature, tempWidth, tempHeight, android.graphics.Color.WHITE)
+    val bitmap = remember(temperature, tempWidth, tempHeight, textArgb) {
+        WidgetTemperatureRenderer.render(context, temperature, tempWidth, tempHeight, textArgb)
     }
-    Column(
-        modifier = background.fillMaxSize().padding(padding).clickable(actionStartActivity(Intent(context, WeatherActivity::class.java))),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
+    val ambient = if (mode == WidgetBackground.AMBIENT) {
+        remember(snapshot, now, size) {
+            WidgetAmbientRenderer.render(snapshot, now, (size.width.value * density).toInt(), (size.height.value * density).toInt(), corner.value * density)
+        }
+    } else {
+        null
+    }
+    val plate = if (mode == WidgetBackground.MATERIAL) {
+        background.background(GlanceTheme.colors.widgetBackground).cornerRadius(corner)
+    } else {
+        background
+    }
+    Box(
+        modifier = plate.fillMaxSize().clickable(actionStartActivity(Intent(context, WeatherActivity::class.java))),
     ) {
-        Image(
-            provider = ImageProvider(bitmap),
-            contentDescription = temperature,
-            contentScale = ContentScale.Fit,
-            modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-        )
-        if (showSubtitle) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().height(subtitleHeight),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    provider = ImageProvider(icon),
-                    contentDescription = null,
-                    colorFilter = if (tintable) ColorFilter.tint(white) else null,
-                    modifier = GlanceModifier.size(subtitleHeight * 0.7f),
-                )
-                Spacer(GlanceModifier.width(6.dp))
-                Text(
-                    text = subtitle,
-                    maxLines = 1,
-                    style = TextStyle(
-                        color = white,
-                        fontSize = (subtitleHeight.value * 0.5f).coerceIn(11f, 16f).sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                )
+        if (ambient != null) {
+            Image(
+                provider = ImageProvider(ambient),
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = GlanceModifier.fillMaxSize(),
+            )
+        }
+        Column(
+            modifier = GlanceModifier.fillMaxSize().padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                provider = ImageProvider(bitmap),
+                contentDescription = temperature,
+                contentScale = ContentScale.Fit,
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+            )
+            if (showSubtitle) {
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth().height(subtitleHeight),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Image(
+                        provider = ImageProvider(icon),
+                        contentDescription = null,
+                        colorFilter = if (tintable) ColorFilter.tint(textColor) else null,
+                        modifier = GlanceModifier.size(subtitleHeight * 0.7f),
+                    )
+                    Spacer(GlanceModifier.width(6.dp))
+                    Text(
+                        text = subtitle,
+                        maxLines = 1,
+                        style = TextStyle(
+                            color = textColor,
+                            fontSize = (subtitleHeight.value * 0.5f).coerceIn(11f, 16f).sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    )
+                }
             }
         }
     }

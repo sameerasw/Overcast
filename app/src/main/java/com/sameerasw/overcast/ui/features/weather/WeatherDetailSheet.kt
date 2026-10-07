@@ -507,7 +507,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
     }
 }
 
-private fun skyState(snapshot: WeatherSnapshot, now: Long): Pair<Float, Boolean>? {
+internal fun skyState(snapshot: WeatherSnapshot, now: Long): Pair<Float, Boolean>? {
     val rise = snapshot.extras?.sunriseMillis ?: return null
     val set = snapshot.extras?.sunsetMillis ?: return null
     val day = 24 * 60 * 60_000L

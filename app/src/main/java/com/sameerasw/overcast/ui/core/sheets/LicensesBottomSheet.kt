@@ -145,6 +145,17 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                     context.getString(R.string.action_source_code) to "https://github.com/googlefonts/noto-emoji",
                 ),
             ),
+            LicenseSection(
+                title = "Phosphor Icons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Duotone weather icons by Phosphor, available as an icon style. Some icons are composed from several glyphs.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://phosphoricons.com",
+                    context.getString(R.string.action_source_code) to "https://github.com/phosphor-icons/core",
+                ),
+            ),
         )
     }
 

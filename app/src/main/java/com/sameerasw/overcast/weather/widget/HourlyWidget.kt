@@ -146,7 +146,8 @@ private fun HourlyContent(
     val fontScale = resources.configuration.fontScale
     val textColor = widgetTextColor(mode)
     val textArgb = widgetTextArgb(mode)
-    val shadow = mode != WidgetBackground.MATERIAL
+    
+    val shadow = mode == WidgetBackground.NONE
     val padding = widgetPadding(mode)
 
     if (hours.isEmpty()) {

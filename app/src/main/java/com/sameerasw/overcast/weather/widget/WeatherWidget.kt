@@ -121,7 +121,8 @@ private fun WeatherWidgetContent(
     val density = resources.displayMetrics.density
     val textColor = widgetTextColor(mode)
     val textArgb = widgetTextArgb(mode)
-    val shadow = mode != WidgetBackground.MATERIAL
+    
+    val shadow = mode == WidgetBackground.NONE
     val padding = widgetPadding(mode)
     val showSubtitle = size.height >= 72.dp
     val subtitleHeight = if (showSubtitle) (size.height * 0.2f).coerceIn(24.dp, 34.dp) else 0.dp

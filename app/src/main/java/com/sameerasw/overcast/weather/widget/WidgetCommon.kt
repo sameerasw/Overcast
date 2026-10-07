@@ -22,6 +22,7 @@ import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.unit.ColorProvider
 import com.sameerasw.overcast.ui.activities.WeatherActivity
+import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 
 internal val WIDGET_CORNER: Dp = 28.dp
 
@@ -46,14 +47,16 @@ internal fun WidgetSurface(
     val size = LocalSize.current
     val density = context.resources.displayMetrics.density
     val ambient = if (mode == WidgetBackground.AMBIENT) {
-        remember(weather?.snapshot, weather?.now, weather?.timeOverride, size) {
+        remember(weather?.snapshot, weather?.now, weather?.timeOverride, weather?.effectSpec, size) {
             WidgetAmbientRenderer.render(
                 weather?.snapshot,
                 weather?.now ?: System.currentTimeMillis(),
                 weather?.timeOverride,
+                weather?.effectSpec ?: WeatherEffectSpec.None,
                 (size.width.value * density).toInt(),
                 (size.height.value * density).toInt(),
                 WIDGET_CORNER.value * density,
+                density,
             )
         }
     } else {

@@ -5,6 +5,7 @@ import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.WeatherRepository
 import com.sameerasw.overcast.weather.WeatherUnits
+import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
 
@@ -14,6 +15,7 @@ internal class WidgetWeather(
     val timeOverride: String?,
     val units: WeatherUnits,
     val style: WeatherIconStyle,
+    val effectSpec: WeatherEffectSpec,
 )
 
 internal suspend fun loadWidgetWeather(context: Context): WidgetWeather {
@@ -34,5 +36,7 @@ internal suspend fun loadWidgetWeather(context: Context): WidgetWeather {
         timeOverride = timeOverride,
         units = WeatherUnits.from(settings),
         style = WeatherIconStyle.fromId(settings.getWeatherIconStyle()),
+        effectSpec = snapshot?.takeIf { settings.isWeatherEffectsEnabled() }
+            ?.let { simulation?.spec ?: WeatherEffectSpec.from(it) } ?: WeatherEffectSpec.None,
     )
 }

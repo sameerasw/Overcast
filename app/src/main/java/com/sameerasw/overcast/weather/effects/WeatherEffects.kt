@@ -166,6 +166,31 @@ fun WeatherEffects(
     }
 }
 
+internal fun DrawScope.drawWeatherEffectsStill(spec: WeatherEffectSpec, strength: Float, areaScale: Float) {
+    val snowState = SnowState()
+    spec.layers.forEachIndexed { index, layer ->
+        val count = when (layer) {
+            is WeatherEffectLayer.Rain, is WeatherEffectLayer.Snow, is WeatherEffectLayer.Hail, is WeatherEffectLayer.Stars ->
+                (particleCount(layer) * areaScale).toInt().coerceAtLeast(4)
+            else -> particleCount(layer)
+        }
+        val state = LayerState(layer, ParticleField.create(count, seed = index * 7919 + 17))
+        when (layer) {
+            is WeatherEffectLayer.Rain -> drawRain(state, layer, STILL_TIME_S, strength, emptyList())
+            is WeatherEffectLayer.Snow -> drawSnow(state.field, STILL_TIME_S, layer.intensity, strength, emptyList(), snowState)
+            is WeatherEffectLayer.Hail -> drawHail(state, layer.intensity, STILL_TIME_S, strength)
+            is WeatherEffectLayer.Clouds -> drawClouds(state.field, STILL_TIME_S, layer.intensity, strength, fog = false)
+            is WeatherEffectLayer.Fog -> drawClouds(state.field, STILL_TIME_S, layer.intensity, strength, fog = true)
+            is WeatherEffectLayer.SunGlow -> drawSunGlow(STILL_TIME_S, layer.intensity, strength)
+            is WeatherEffectLayer.Stars -> drawStars(state.field, STILL_TIME_S, layer.intensity, strength)
+            // A full-strength flash would wash the whole widget out, so the frozen frame is the flash at a gentle strength.
+            is WeatherEffectLayer.Lightning -> drawLightning(lightningStrike(0) + 0.05f, layer.intensity, strength * 0.35f)
+        }
+    }
+}
+
+private const val STILL_TIME_S = 4.2f
+
 private fun particleCount(layer: WeatherEffectLayer): Int = when (layer) {
     is WeatherEffectLayer.Rain -> (6 + 55 * layer.intensity.pow(1.3f)).toInt()
     is WeatherEffectLayer.Snow -> (20 + 60 * layer.intensity).toInt()

@@ -59,6 +59,10 @@
     <string name="weather_icon_style_phosphor">Phosphor</string>
     <string name="weather_icon_style_tabler">Tabler</string>
     <string name="widget_weather_description">Temperature and conditions, with no background</string>
+    <string name="widget_weather_label">Overcast</string>
+    <string name="widget_hourly_label">Overcast hourly</string>
+    <string name="widget_hourly_description">Hourly forecast that shows more hours as you widen it</string>
+    <string name="widget_hourly_now">Now</string>
     <string name="widget_weather_empty">Open Overcast</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>

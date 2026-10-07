@@ -155,13 +155,20 @@ object WeatherWidgetUpdater {
     // Cheap to call from anywhere; does nothing when no widget is placed.
     fun updateAll(context: Context) {
         val app = context.applicationContext
-        scope.launch { runCatching { WeatherWidget().updateAll(app) } }
+        scope.launch {
+            runCatching { WeatherWidget().updateAll(app) }
+            runCatching { HourlyWidget().updateAll(app) }
+        }
     }
 
     // Generated previews only exist on Android 15+, and the system rate-limits how often they can be set.
     fun refreshPreview(context: Context) {
         if (Build.VERSION.SDK_INT < 35) return
         val app = context.applicationContext
-        scope.launch { runCatching { GlanceAppWidgetManager(app).setWidgetPreviews(WeatherWidgetReceiver::class) } }
+        scope.launch {
+            val manager = GlanceAppWidgetManager(app)
+            runCatching { manager.setWidgetPreviews(WeatherWidgetReceiver::class) }
+            runCatching { manager.setWidgetPreviews(HourlyWidgetReceiver::class) }
+        }
     }
 }

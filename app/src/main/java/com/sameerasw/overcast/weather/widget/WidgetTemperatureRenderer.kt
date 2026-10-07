@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import com.sameerasw.overcast.R
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -15,30 +16,28 @@ import kotlin.math.min
 // The degree sign hangs off the right of the digits and is balanced by empty space on the left, so only the digits
 // count towards centring, the same way the in-app header does it.
 object WidgetTemperatureRenderer {
-    private const val VARIATIONS = "'wdth' 52, 'wght' 1, 'ROND' 100"
     private const val MEASURE_SIZE = 300f
     private const val DEGREE_SCALE = 0.42f
     private const val DEGREE_GAP = 0.05f
     private const val MAX_SIDE_PX = 700
     private const val DEGREE = "°"
 
-    @Volatile
-    private var typeface: Typeface? = null
+    private val faces = ConcurrentHashMap<String, Typeface>()
 
-    private fun typeface(context: Context): Typeface =
-        typeface ?: synchronized(this) {
-            typeface ?: build(context.applicationContext).also { typeface = it }
-        }
+    private fun typeface(context: Context, widthAxis: Int, weightAxis: Int): Typeface =
+        faces.getOrPut("$widthAxis/$weightAxis") { build(context.applicationContext, widthAxis, weightAxis) }
 
-    private fun build(context: Context): Typeface {
+    private fun build(context: Context, widthAxis: Int, weightAxis: Int): Typeface {
         val file = File(context.cacheDir, "widget_google_sans_flex.ttf")
         return try {
-            if (!file.exists() || file.length() == 0L) {
-                context.resources.openRawResource(R.font.google_sans_flex).use { input ->
-                    file.outputStream().use { input.copyTo(it) }
+            synchronized(this) {
+                if (!file.exists() || file.length() == 0L) {
+                    context.resources.openRawResource(R.font.google_sans_flex).use { input ->
+                        file.outputStream().use { input.copyTo(it) }
+                    }
                 }
             }
-            Typeface.Builder(file).setFontVariationSettings(VARIATIONS).build() ?: Typeface.DEFAULT
+            Typeface.Builder(file).setFontVariationSettings("'wdth' $widthAxis, 'wght' $weightAxis, 'ROND' 100").build() ?: Typeface.DEFAULT
         } catch (_: Exception) {
             Typeface.DEFAULT
         }
@@ -51,10 +50,18 @@ object WidgetTemperatureRenderer {
         textSize = size
     }
 
-    fun render(context: Context, temperature: String, maxWidthPx: Int, maxHeightPx: Int, color: Int): Bitmap {
+    fun render(
+        context: Context,
+        temperature: String,
+        maxWidthPx: Int,
+        maxHeightPx: Int,
+        color: Int,
+        widthAxis: Int = 52,
+        weightAxis: Int = 1,
+    ): Bitmap {
         val maxW = maxWidthPx.coerceIn(1, MAX_SIDE_PX)
         val maxH = maxHeightPx.coerceIn(1, MAX_SIDE_PX)
-        val face = typeface(context)
+        val face = typeface(context, widthAxis, weightAxis)
         val hasDegree = temperature.endsWith(DEGREE)
         val digits = temperature.removeSuffix(DEGREE)
 

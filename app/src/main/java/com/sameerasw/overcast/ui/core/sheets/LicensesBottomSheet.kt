@@ -156,6 +156,17 @@ fun LicensesBottomSheet(onDismissRequest: () -> Unit) {
                     context.getString(R.string.action_source_code) to "https://github.com/phosphor-icons/core",
                 ),
             ),
+            LicenseSection(
+                title = "Tabler Icons",
+                iconRes = R.drawable.rounded_partly_cloudy_day_24,
+                description = "Outline weather icons by Paweł Kuna, available as an icon style. Some icons are composed from several glyphs.",
+                licenseType = "MIT",
+                licenseColor = getLicenseColor("mit"),
+                links = listOf(
+                    context.getString(R.string.action_website) to "https://tabler.io/icons",
+                    context.getString(R.string.action_source_code) to "https://github.com/tabler/tabler-icons",
+                ),
+            ),
         )
     }
 

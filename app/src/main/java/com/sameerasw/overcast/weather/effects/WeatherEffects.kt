@@ -36,6 +36,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.sin
 import kotlin.random.Random
@@ -162,7 +163,7 @@ fun WeatherEffects(
 }
 
 private fun particleCount(layer: WeatherEffectLayer): Int = when (layer) {
-    is WeatherEffectLayer.Rain -> (40 + 110 * layer.intensity).toInt()
+    is WeatherEffectLayer.Rain -> (6 + 55 * layer.intensity.pow(1.3f)).toInt()
     is WeatherEffectLayer.Snow -> (20 + 60 * layer.intensity).toInt()
     is WeatherEffectLayer.Hail -> (20 + 50 * layer.intensity).toInt()
     is WeatherEffectLayer.Stars -> (12 + 28 * layer.intensity).toInt()
@@ -661,7 +662,7 @@ private const val SURFACE_DROP_SHARE = 0.035f
 private const val SPLASH_SHARE = 0.22f
 private const val HAIL_SPLASH_SHARE = 0.12f
 private const val RAIN_SPEED = 0.6f
-private const val RAIN_HAPTIC_SHARE = 0.05f
+private const val RAIN_HAPTIC_SHARE = 0.1f
 private const val HAIL_HAPTIC_SHARE = 0.1f
 private const val HERO_SALT = 101
 private const val SPLASH_SALT = 211

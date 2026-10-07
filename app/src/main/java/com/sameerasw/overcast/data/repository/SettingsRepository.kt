@@ -53,9 +53,19 @@ class SettingsRepository(
 
     fun getInt(key: String, default: Int = 0): Int = prefs.getInt(key, default)
 
-    fun putBoolean(key: String, value: Boolean) = prefs.edit().putBoolean(key, value).apply()
+    fun putBoolean(key: String, value: Boolean) {
+        prefs.edit().putBoolean(key, value).apply()
+        refreshWidgetsIfSimulation(key)
+    }
 
-    fun putString(key: String, value: String?) = prefs.edit().putString(key, value).apply()
+    fun putString(key: String, value: String?) {
+        prefs.edit().putString(key, value).apply()
+        refreshWidgetsIfSimulation(key)
+    }
+
+    private fun refreshWidgetsIfSimulation(key: String) {
+        if (key.startsWith("debug_") || key == KEY_DEVELOPER_MODE_ENABLED) WeatherWidgetUpdater.updateAll(appContext)
+    }
 
     fun putInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
 

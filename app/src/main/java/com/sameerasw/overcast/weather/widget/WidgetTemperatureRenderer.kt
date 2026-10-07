@@ -58,6 +58,7 @@ object WidgetTemperatureRenderer {
         color: Int,
         widthAxis: Int = 52,
         weightAxis: Int = 1,
+        shadow: Boolean = true,
     ): Bitmap {
         val maxW = maxWidthPx.coerceIn(1, MAX_SIDE_PX)
         val maxH = maxHeightPx.coerceIn(1, MAX_SIDE_PX)
@@ -82,10 +83,12 @@ object WidgetTemperatureRenderer {
 
         val digitPaint = paint(face, color, size)
         val degreePaint = paint(face, color, size * DEGREE_SCALE)
-        val shadow = size * 0.02f
-        digitPaint.setShadowLayer(shadow, 0f, shadow, 0x55000000)
-        degreePaint.setShadowLayer(shadow, 0f, shadow, 0x55000000)
-        val pad = ceil(shadow * 2).toInt() + 1
+        val shadowRadius = if (shadow) size * 0.02f else 0f
+        if (shadow) {
+            digitPaint.setShadowLayer(shadowRadius, 0f, shadowRadius, 0x55000000)
+            degreePaint.setShadowLayer(shadowRadius, 0f, shadowRadius, 0x55000000)
+        }
+        val pad = ceil(shadowRadius * 2).toInt() + 1
 
         val width = ceil(digitBounds.width() + 2 * side).toInt() + pad * 2
         val height = digitBounds.height() + pad * 2
@@ -97,6 +100,30 @@ object WidgetTemperatureRenderer {
             val degreeLeft = digitsLeft + digitBounds.width() + size * DEGREE_GAP
             canvas.drawText(DEGREE, degreeLeft - degreeBounds.left, (pad - degreeBounds.top).toFloat(), degreePaint)
         }
+        return bitmap
+    }
+
+    fun renderText(
+        context: Context,
+        text: String,
+        textSizePx: Float,
+        maxWidthPx: Int,
+        color: Int,
+        widthAxis: Int = 100,
+        weightAxis: Int = 500,
+        shadow: Boolean = true,
+    ): Bitmap {
+        val paint = paint(typeface(context, widthAxis, weightAxis), color, textSizePx).apply { letterSpacing = 0f }
+        val measured = paint.measureText(text)
+        if (measured > maxWidthPx && maxWidthPx > 0) paint.textSize = textSizePx * maxWidthPx / measured
+        val radius = if (shadow) paint.textSize * 0.06f else 0f
+        if (shadow) paint.setShadowLayer(radius, 0f, radius * 0.5f, 0x66000000)
+        val pad = ceil(radius * 2).toInt() + 1
+        val metrics = paint.fontMetrics
+        val width = ceil(paint.measureText(text)).toInt() + pad * 2
+        val height = ceil(metrics.descent - metrics.ascent).toInt() + pad * 2
+        val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        Canvas(bitmap).drawText(text, pad.toFloat(), pad - metrics.ascent, paint)
         return bitmap
     }
 }

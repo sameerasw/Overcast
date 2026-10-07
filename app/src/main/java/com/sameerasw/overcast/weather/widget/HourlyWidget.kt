@@ -1,30 +1,27 @@
 package com.sameerasw.overcast.weather.widget
 
 import android.content.Context
-import android.content.Intent
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
@@ -35,20 +32,12 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
-import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
-import androidx.glance.text.TextAlign
-import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.sameerasw.overcast.R
 import com.sameerasw.overcast.data.repository.SettingsRepository
-import com.sameerasw.overcast.ui.activities.WeatherActivity
 import com.sameerasw.overcast.weather.WeatherFormat
 import com.sameerasw.overcast.weather.WeatherIconSlot
 import com.sameerasw.overcast.weather.WeatherIconStyle
-import com.sameerasw.overcast.weather.WeatherRepository
-import com.sameerasw.overcast.weather.WeatherUnits
-import com.sameerasw.overcast.weather.model.WeatherCondition
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,24 +54,23 @@ class HourlyWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        WeatherRepository.ensureLoaded(context)
-        val settings = SettingsRepository(context)
-        val units = WeatherUnits.from(settings)
-        val style = WeatherIconStyle.fromId(settings.getWeatherIconStyle())
-        val snapshot = WeatherRepository.state.value.snapshot
+        val weather = loadWidgetWeather(context)
         val now = System.currentTimeMillis()
-        val hours = snapshot?.hourly.orEmpty()
+        val hours = weather.snapshot?.hourly.orEmpty()
             .filter { it.timeMillis > now - HOUR_MS }
             .take(MAX_HOURS)
             .map {
                 HourData(
                     time = if (abs(it.timeMillis - now) < HOUR_MS * 3 / 4) context.getString(R.string.widget_hourly_now) else formatHour(context, it.timeMillis),
-                    temperature = WeatherFormat.temperature(it.tempC, units.temperature),
-                    icon = style.icon(it.condition, it.isDay),
+                    temperature = WeatherFormat.temperature(it.tempC, weather.units.temperature),
+                    icon = weather.style.icon(it.condition, it.isDay),
                 )
             }
+        val mode = WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(id))
         provideContent {
-            HourlyContent(hours, style.tintable, context.getString(R.string.widget_weather_empty))
+            GlanceTheme {
+                HourlyContent(hours, weather.style.tintable, context.getString(R.string.widget_weather_empty), mode, weather)
+            }
         }
     }
 
@@ -98,18 +86,28 @@ class HourlyWidget : GlanceAppWidget() {
             Triple("5pm", "19°", WeatherIconSlot.RAIN),
         ).map { HourData(it.first, it.second, style.icon(it.third)) }
         provideContent {
-            HourlyContent(
-                hours = sample,
-                tintable = style.tintable,
-                emptyText = "",
-                background = GlanceModifier.background(ColorProvider(Color(0xFF14609F))).cornerRadius(28.dp),
-            )
+            GlanceTheme {
+                HourlyContent(
+                    hours = sample,
+                    tintable = style.tintable,
+                    emptyText = "",
+                    mode = WidgetBackground.NONE,
+                    weather = null,
+                    background = GlanceModifier.background(ColorProvider(Color(0xFF14609F))).cornerRadius(WIDGET_CORNER),
+                )
+            }
         }
     }
 }
 
 class HourlyWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = HourlyWidget()
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        val store = WidgetConfigStore(context)
+        appWidgetIds.forEach { store.remove(it) }
+    }
 }
 
 private fun formatHour(context: Context, millis: Long): String {
@@ -122,21 +120,32 @@ private fun HourlyContent(
     hours: List<HourData>,
     tintable: Boolean,
     emptyText: String,
+    mode: WidgetBackground,
+    weather: WidgetWeather?,
     background: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
     val size = LocalSize.current
-    val density = context.resources.displayMetrics.density
-    val white = ColorProvider(Color.White)
-    val padding = 8.dp
-    val open = actionStartActivity(Intent(context, WeatherActivity::class.java))
+    val resources = context.resources
+    val density = resources.displayMetrics.density
+    val fontScale = resources.configuration.fontScale
+    val textColor = widgetTextColor(mode)
+    val textArgb = widgetTextArgb(mode)
+    val shadow = mode != WidgetBackground.MATERIAL
+    val padding = widgetPadding(mode)
 
     if (hours.isEmpty()) {
-        Box(
-            modifier = background.fillMaxSize().padding(padding).clickable(open),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(emptyText, style = TextStyle(color = white, fontSize = 14.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center))
+        val message = remember(emptyText, textArgb, shadow) {
+            WidgetTemperatureRenderer.renderText(context, emptyText.ifEmpty { " " }, 14f * density * fontScale, (size.width.value * density).toInt(), textArgb, shadow = shadow)
+        }
+        WidgetSurface(mode, weather, background) {
+            Column(
+                modifier = GlanceModifier.fillMaxSize().padding(padding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(provider = ImageProvider(message), contentDescription = emptyText)
+            }
         }
         return
     }
@@ -149,40 +158,42 @@ private fun HourlyContent(
     val timeSp = (size.height.value * 0.12f).coerceIn(10f, 14f)
     val tempWidthPx = (itemWidth.value * 0.8f * density).toInt()
     val tempHeightPx = (tempHeight.value * density).toInt()
+    val timeWidthPx = (itemWidth.value * density).toInt()
 
-    Row(
-        modifier = background.fillMaxSize().padding(padding).clickable(open),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        hours.take(count).forEach { hour ->
-            val bitmap = remember(hour.temperature, tempWidthPx, tempHeightPx) {
-                WidgetTemperatureRenderer.render(context, hour.temperature, tempWidthPx, tempHeightPx, android.graphics.Color.WHITE, widthAxis = 60, weightAxis = 300)
-            }
-            Column(
-                modifier = GlanceModifier.defaultWeight().fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = hour.time,
-                    maxLines = 1,
-                    style = TextStyle(color = white, fontSize = timeSp.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center),
-                )
-                Spacer(GlanceModifier.height(4.dp))
-                Image(
-                    provider = ImageProvider(hour.icon),
-                    contentDescription = null,
-                    colorFilter = if (tintable) ColorFilter.tint(white) else null,
-                    modifier = GlanceModifier.size(iconSize),
-                )
-                Spacer(GlanceModifier.height(4.dp))
-                Image(
-                    provider = ImageProvider(bitmap),
-                    contentDescription = hour.temperature,
-                    contentScale = ContentScale.Fit,
-                    modifier = GlanceModifier.fillMaxWidth().height(tempHeight),
-                )
+    WidgetSurface(mode, weather, background) {
+        Row(
+            modifier = GlanceModifier.fillMaxSize().padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            hours.take(count).forEach { hour ->
+                val tempBitmap = remember(hour.temperature, tempWidthPx, tempHeightPx, textArgb, shadow) {
+                    WidgetTemperatureRenderer.render(context, hour.temperature, tempWidthPx, tempHeightPx, textArgb, widthAxis = 60, weightAxis = 300, shadow = shadow)
+                }
+                val timeBitmap = remember(hour.time, timeSp, timeWidthPx, textArgb, shadow) {
+                    WidgetTemperatureRenderer.renderText(context, hour.time, timeSp * density * fontScale, timeWidthPx, textArgb, shadow = shadow)
+                }
+                Column(
+                    modifier = GlanceModifier.defaultWeight().fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Image(provider = ImageProvider(timeBitmap), contentDescription = hour.time)
+                    Spacer(GlanceModifier.height(4.dp))
+                    Image(
+                        provider = ImageProvider(hour.icon),
+                        contentDescription = null,
+                        colorFilter = if (tintable) ColorFilter.tint(textColor) else null,
+                        modifier = GlanceModifier.size(iconSize),
+                    )
+                    Spacer(GlanceModifier.height(4.dp))
+                    Image(
+                        provider = ImageProvider(tempBitmap),
+                        contentDescription = hour.temperature,
+                        contentScale = ContentScale.Fit,
+                        modifier = GlanceModifier.fillMaxWidth().height(tempHeight),
+                    )
+                }
             }
         }
     }

@@ -22,7 +22,7 @@ object WidgetAmbientRenderer {
     private const val SUN = 0xFFFFE2A8.toInt()
     private const val MOON = 0xFFE6ECFF.toInt()
 
-    fun render(snapshot: WeatherSnapshot?, now: Long, widthPx: Int, heightPx: Int, cornerPx: Float): Bitmap {
+    fun render(snapshot: WeatherSnapshot?, now: Long, timeOverride: String?, widthPx: Int, heightPx: Int, cornerPx: Float): Bitmap {
         val scale = min(1f, MAX_SIDE_PX.toFloat() / maxOf(widthPx, heightPx, 1))
         val w = (widthPx * scale).toInt().coerceAtLeast(1)
         val h = (heightPx * scale).toInt().coerceAtLeast(1)
@@ -31,7 +31,7 @@ object WidgetAmbientRenderer {
         val radius = cornerPx * scale
         canvas.clipPath(Path().apply { addRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), radius, radius, Path.Direction.CW) })
 
-        val palette = WeatherPalette.from(snapshot, now)
+        val palette = WeatherPalette.from(snapshot, now, timeOverride)
         val sky = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, 0f, 0f, h.toFloat(),

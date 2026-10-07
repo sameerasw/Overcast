@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.layout.Layout
@@ -219,8 +220,21 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
     val screenHeightPx = with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
     val sheetCornerPx = with(LocalDensity.current) { 28.dp.toPx() }
 
+    // Staged intro: content fades in first, the weather effects ease in afterwards, and the network refresh waits until it settles.
+    val hasSnapshot = snapshot != null
+    var effectsGo by remember { mutableStateOf(false) }
+    LaunchedEffect(hasSnapshot) {
+        if (hasSnapshot) {
+            delay(EFFECTS_DELAY_MS)
+            effectsGo = true
+        }
+    }
+    val contentAlpha by animateFloatAsState(if (hasSnapshot) 1f else 0f, tween(CONTENT_FADE_MS), label = "contentAlpha")
+    val effectRamp by animateFloatAsState(if (effectsGo) 1f else 0f, tween(EFFECTS_FADE_MS, easing = LinearOutSlowInEasing), label = "effectRamp")
+
     LaunchedEffect(Unit) {
         WeatherRepository.ensureLoaded(context)
+        if (WeatherRepository.state.value.snapshot != null) delay(REFRESH_DELAY_MS)
         val needsLocation = settings.getWeatherLocationMode() != "manual" && !DeviceLocationSource.hasPermission(context)
         if (needsLocation) requestLocation() else if (WeatherRepository.isStale(context)) WeatherRepository.refresh(context)
     }
@@ -269,7 +283,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         val skyHeightPx = with(density) { SKY_HEIGHT.toPx() }
         val collapseShiftPx = with(density) { 60.dp.toPx() }
         val fallbackYPx = with(density) { 150.dp.toPx() }
-        Box(Modifier.fillMaxSize().rainOnGlass(glassRain?.intensity ?: 0f, glassRain?.slant ?: 0f) {
+        Box(Modifier.fillMaxSize().rainOnGlass((glassRain?.intensity ?: 0f) * effectRamp, glassRain?.slant ?: 0f) {
             if (sky == null) {
                 Offset(0.5f, fallbackYPx - collapse.floatValue * collapseShiftPx)
             } else {
@@ -300,7 +314,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                     0f
                 }
                 snapshot?.let { SkyBody(it, now, { collapse.floatValue }) }
-                if (!effectSpec.isEmpty) {
+                if (!effectSpec.isEmpty && effectRamp > 0f) {
                     val effectsBottomFadePx = WindowInsets.navigationBars.getBottom(density) + with(density) { 20.dp.toPx() }
                     WeatherEffects(
                         spec = effectSpec,
@@ -308,8 +322,8 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             .matchParentSize()
                             .progressiveBlur(blurRadius = 40f, height = topFadePx, direction = BlurDirection.TOP, showGradientOverlay = false)
                             .progressiveBlur(blurRadius = 14f, height = effectsBottomFadePx, direction = BlurDirection.BOTTOM, showGradientOverlay = false),
-                        strength = 1.7f,
-                        haptics = effectHaptics,
+                        strength = 1.7f * effectRamp,
+                        haptics = effectHaptics.takeIf { effectRamp > 0.6f },
                         surfaces = {
                             val top = sheetTop.floatValue
                             val cards = rainSurfaces.entries.mapNotNull { (key, source) -> source.resolve(key) }
@@ -398,7 +412,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
                             )
                         },
                     ) {
-                        Box(Modifier.fillMaxSize().nestedScroll(connection)) {
+                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }.nestedScroll(connection)) {
                             Box(
                                 Modifier
                                     .fillMaxSize()
@@ -552,6 +566,10 @@ private fun Modifier.rainSurface(key: String, corner: Dp = 28.dp, mask: (() -> R
 }
 
 private val SIDE_PADDING = 20.dp
+private const val CONTENT_FADE_MS = 500
+private const val EFFECTS_DELAY_MS = 450L
+private const val EFFECTS_FADE_MS = 1800
+private const val REFRESH_DELAY_MS = 600L
 private val COLLAPSE_RANGE = 520.dp
 private const val COMBINE_AT = 0.9f
 private const val HEADER_EXTRAS_DP = 170f

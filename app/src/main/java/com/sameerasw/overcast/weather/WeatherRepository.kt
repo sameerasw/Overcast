@@ -34,7 +34,8 @@ object WeatherRepository {
     val state: StateFlow<WeatherState> = _state.asStateFlow()
 
     private var cache = WeatherCache()
-    private var loaded = false
+    @Volatile private var loaded = false
+    val isLoaded: Boolean get() = loaded
 
     @Keep
     private data class WeatherCache(

@@ -91,6 +91,7 @@ fun WeatherSettingsUI(
 
     var compatibility by remember { mutableStateOf(settings.isCompatibilityMode()) }
     var ambientForecast by remember { mutableStateOf(settings.isAmbientForecastEnabled()) }
+    var unitsExpanded by remember { mutableStateOf(false) }
     var showCompatibilityInfo by remember { mutableStateOf(false) }
     var effects by remember { mutableStateOf(settings.isWeatherEffectsEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
@@ -242,6 +243,73 @@ fun WeatherSettingsUI(
                         )
                     }
                 }
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_straighten_24,
+                    title = stringResource(R.string.weather_section_units),
+                    showToggle = false,
+                    onClick = { unitsExpanded = !unitsExpanded },
+                    trailingContent = {
+                        Icon(
+                            painter = painterResource(if (unitsExpanded) R.drawable.rounded_keyboard_arrow_up_24 else R.drawable.rounded_keyboard_arrow_down_24),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
+                AnimatedVisibility(visible = unitsExpanded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        UnitPickerItem(
+                            title = R.string.weather_units_temperature,
+                            options = TemperatureUnit.entries,
+                            iconRes = R.drawable.rounded_thermostat_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemTemperature(),
+                            stored = settings.getWeatherUnits(),
+                            onSelected = settings::setWeatherUnits,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_wind,
+                            options = WindSpeedUnit.entries,
+                            iconRes = R.drawable.rounded_air_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemWind(),
+                            stored = settings.getWindUnit(),
+                            onSelected = settings::setWindUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_pressure,
+                            options = PressureUnit.entries,
+                            iconRes = R.drawable.rounded_compress_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemPressure(),
+                            stored = settings.getPressureUnit(),
+                            onSelected = settings::setPressureUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_distance,
+                            options = DistanceUnit.entries,
+                            iconRes = R.drawable.rounded_visibility_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemDistance(),
+                            stored = settings.getDistanceUnit(),
+                            onSelected = settings::setDistanceUnit,
+                        )
+                        UnitPickerItem(
+                            title = R.string.weather_units_precipitation,
+                            options = PrecipitationUnit.entries,
+                            iconRes = R.drawable.rounded_water_drop_24,
+                            id = { it.id },
+                            symbol = { it.symbol },
+                            system = WeatherUnits.systemPrecipitation(),
+                            stored = settings.getPrecipitationUnit(),
+                            onSelected = settings::setPrecipitationUnit,
+                        )
+                    }
+                }
                 val sourceError = weatherState.error?.takeIf { it !is WeatherError.LocationPermission && it !is WeatherError.NoLocation }
                 AnimatedVisibility(visible = sourceError != null) {
                     val shownError = remember { mutableStateOf(sourceError) }
@@ -269,60 +337,6 @@ fun WeatherSettingsUI(
                         }
                     }
                 }
-            }
-
-            SectionTitle(R.string.weather_section_units)
-            RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
-                UnitPickerItem(
-                    title = R.string.weather_units_temperature,
-                    options = TemperatureUnit.entries,
-                    iconRes = R.drawable.rounded_thermostat_24,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemTemperature(),
-                    stored = settings.getWeatherUnits(),
-                    onSelected = settings::setWeatherUnits,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_wind,
-                    options = WindSpeedUnit.entries,
-                    iconRes = R.drawable.rounded_air_24,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemWind(),
-                    stored = settings.getWindUnit(),
-                    onSelected = settings::setWindUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_pressure,
-                    options = PressureUnit.entries,
-                    iconRes = R.drawable.rounded_compress_24,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemPressure(),
-                    stored = settings.getPressureUnit(),
-                    onSelected = settings::setPressureUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_distance,
-                    options = DistanceUnit.entries,
-                    iconRes = R.drawable.rounded_visibility_24,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemDistance(),
-                    stored = settings.getDistanceUnit(),
-                    onSelected = settings::setDistanceUnit,
-                )
-                UnitPickerItem(
-                    title = R.string.weather_units_precipitation,
-                    options = PrecipitationUnit.entries,
-                    iconRes = R.drawable.rounded_water_drop_24,
-                    id = { it.id },
-                    symbol = { it.symbol },
-                    system = WeatherUnits.systemPrecipitation(),
-                    stored = settings.getPrecipitationUnit(),
-                    onSelected = settings::setPrecipitationUnit,
-                )
             }
 
             SectionTitle(R.string.weather_section_display)

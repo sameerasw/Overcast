@@ -3,6 +3,8 @@ package com.sameerasw.overcast.weather.widget
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -13,6 +15,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -49,15 +52,10 @@ class WeatherWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val weather = loadWidgetWeather(context)
-        val snapshot = weather.snapshot
-        val temperature = snapshot?.let { WeatherFormat.temperature(it.tempC, weather.units.temperature) } ?: "--°"
-        val subtitle = snapshot?.conditionText ?: context.getString(R.string.widget_weather_empty)
-        val icon = snapshot?.let { weather.style.icon(it.condition, it.isDay) } ?: weather.style.icon(WeatherIconSlot.CLOUDY)
-        val mode = WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(id))
+        WidgetHub.refresh(context)
         provideContent {
             GlanceTheme {
-                WeatherWidgetContent(temperature, subtitle, icon, weather.style.tintable, mode, weather)
+                WeatherWidgetRoot()
             }
         }
     }
@@ -90,6 +88,21 @@ class WeatherWidgetReceiver : GlanceAppWidgetReceiver() {
         val store = WidgetConfigStore(context)
         appWidgetIds.forEach { store.remove(it) }
     }
+}
+
+@Composable
+private fun WeatherWidgetRoot() {
+    val context = LocalContext.current
+    val glanceId = LocalGlanceId.current
+    val weather by WidgetHub.weather.collectAsState()
+    val revision by WidgetHub.revision.collectAsState()
+    val mode = remember(revision) { WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(glanceId)) }
+    val current = weather ?: return
+    val snapshot = current.snapshot
+    val temperature = snapshot?.let { WeatherFormat.temperature(it.tempC, current.units.temperature) } ?: "--°"
+    val subtitle = snapshot?.conditionText ?: context.getString(R.string.widget_weather_empty)
+    val icon = snapshot?.let { current.style.icon(it.condition, it.isDay) } ?: current.style.icon(WeatherIconSlot.CLOUDY)
+    WeatherWidgetContent(temperature, subtitle, icon, current.style.tintable, mode, current)
 }
 
 @Composable
@@ -167,6 +180,8 @@ object WeatherWidgetUpdater {
     fun updateAll(context: Context) {
         val app = context.applicationContext
         scope.launch {
+            
+            runCatching { WidgetHub.refresh(app) }
             runCatching { WeatherWidget().updateAll(app) }
             runCatching { HourlyWidget().updateAll(app) }
         }

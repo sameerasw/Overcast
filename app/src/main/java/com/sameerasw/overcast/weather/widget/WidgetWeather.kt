@@ -8,6 +8,9 @@ import com.sameerasw.overcast.weather.WeatherUnits
 import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.model.WeatherSnapshot
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 internal class WidgetWeather(
     val snapshot: WeatherSnapshot?,
@@ -39,4 +42,17 @@ internal suspend fun loadWidgetWeather(context: Context): WidgetWeather {
         effectSpec = snapshot?.takeIf { settings.isWeatherEffectsEnabled() }
             ?.let { simulation?.spec ?: WeatherEffectSpec.from(it) } ?: WeatherEffectSpec.None,
     )
+}
+
+internal object WidgetHub {
+    private val _weather = MutableStateFlow<WidgetWeather?>(null)
+    val weather: StateFlow<WidgetWeather?> = _weather.asStateFlow()
+
+    private val _revision = MutableStateFlow(0)
+    val revision: StateFlow<Int> = _revision.asStateFlow()
+
+    suspend fun refresh(context: Context) {
+        _weather.value = loadWidgetWeather(context)
+        _revision.value += 1
+    }
 }

@@ -3,6 +3,8 @@ package com.sameerasw.overcast.weather.widget
 import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -13,6 +15,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -54,22 +57,10 @@ class HourlyWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val weather = loadWidgetWeather(context)
-        val now = System.currentTimeMillis()
-        val hours = weather.snapshot?.hourly.orEmpty()
-            .filter { it.timeMillis > now - HOUR_MS }
-            .take(MAX_HOURS)
-            .map {
-                HourData(
-                    time = if (abs(it.timeMillis - now) < HOUR_MS * 3 / 4) context.getString(R.string.widget_hourly_now) else formatHour(context, it.timeMillis),
-                    temperature = WeatherFormat.temperature(it.tempC, weather.units.temperature),
-                    icon = weather.style.icon(it.condition, it.isDay),
-                )
-            }
-        val mode = WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(id))
+        WidgetHub.refresh(context)
         provideContent {
             GlanceTheme {
-                HourlyContent(hours, weather.style.tintable, context.getString(R.string.widget_weather_empty), mode, weather)
+                HourlyRoot()
             }
         }
     }
@@ -113,6 +104,30 @@ class HourlyWidgetReceiver : GlanceAppWidgetReceiver() {
 private fun formatHour(context: Context, millis: Long): String {
     val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "ha"
     return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(millis)).lowercase(Locale.getDefault())
+}
+
+@Composable
+private fun HourlyRoot() {
+    val context = LocalContext.current
+    val glanceId = LocalGlanceId.current
+    val weather by WidgetHub.weather.collectAsState()
+    val revision by WidgetHub.revision.collectAsState()
+    val mode = remember(revision) { WidgetConfigStore(context).background(GlanceAppWidgetManager(context).getAppWidgetId(glanceId)) }
+    val current = weather ?: return
+    val hours = remember(current) {
+        val now = System.currentTimeMillis()
+        current.snapshot?.hourly.orEmpty()
+            .filter { it.timeMillis > now - HOUR_MS }
+            .take(MAX_HOURS)
+            .map {
+                HourData(
+                    time = if (abs(it.timeMillis - now) < HOUR_MS * 3 / 4) context.getString(R.string.widget_hourly_now) else formatHour(context, it.timeMillis),
+                    temperature = WeatherFormat.temperature(it.tempC, current.units.temperature),
+                    icon = current.style.icon(it.condition, it.isDay),
+                )
+            }
+    }
+    HourlyContent(hours, current.style.tintable, context.getString(R.string.widget_weather_empty), mode, current)
 }
 
 @Composable

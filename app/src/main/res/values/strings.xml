@@ -78,6 +78,7 @@
     <string name="widget_bg_material">Material</string>
     <string name="widget_weather_empty">Open Overcast</string>
     <string name="compatibility_mode_title">Compatibility mode</string>
+    <string name="compatibility_info">Disables animations and blurs. \nSuitable for low-end devices.</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>

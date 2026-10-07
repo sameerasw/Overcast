@@ -114,7 +114,7 @@ class SettingsActivity : ComponentActivity() {
                         ) {
                             WeatherSettingsUI(modifier = Modifier.padding(top = 16.dp))
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(32.dp))
 
                             RoundedCardContainer(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 AboutSection(

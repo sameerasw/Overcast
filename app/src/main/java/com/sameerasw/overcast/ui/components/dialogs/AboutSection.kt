@@ -439,33 +439,28 @@ fun AboutSection(
                 }
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
-            RepoDetailsRow()
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            ContributorsCarousel()
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            OutlinedButton(
-                onClick = {
-                    HapticUtil.performUIHaptic(view)
-                    showLicensesSheet = true
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.rounded_code_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.action_licenses_and_credits))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                RepoDetailsRow()
+                ContributorsCarousel(modifier = Modifier.padding(top = 12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        HapticUtil.performUIHaptic(view)
+                        showLicensesSheet = true
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.rounded_code_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_licenses_and_credits))
+                }
             }
         }
     }

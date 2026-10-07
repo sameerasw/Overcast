@@ -70,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.sameerasw.overcast.BuildConfig
 import com.sameerasw.overcast.R
 import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
@@ -265,6 +266,15 @@ private fun WelcomeStep(onNext: () -> Unit) {
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (BuildConfig.PLAY_BUILD) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.onboarding_thanks),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.weight(1f))
             Row(
                 modifier = Modifier

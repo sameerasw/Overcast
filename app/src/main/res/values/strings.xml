@@ -130,6 +130,9 @@
     <string name="permdesc_read_weather">Lets the app read the latest weather for your current or saved location from Overcast.</string>
     <string name="permgrouplab_weather">Weather</string>
     <string name="permgroupdesc_weather">access weather data from Overcast</string>
+    <string name="support_banner_title">Support Overcast</string>
+    <string name="support_banner_text">Get the app from Google Play to support its development</string>
+    <string name="onboarding_thanks">Thank you for the support &lt;3</string>
     <string name="welcome_title">Welcome to Overcast</string>
     <string name="welcome_developer_attribution">Made by sameerasw</string>
     <string name="action_lets_begin">Let\'s begin</string>

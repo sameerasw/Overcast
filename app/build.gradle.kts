@@ -37,6 +37,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        // GitHub
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "PLAY_BUILD", "false")
+        }
+        // Play Store.
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "PLAY_BUILD", "true")
+        }
+    }
+
     buildTypes {
 //        optimized dev build
 //           debug {
@@ -65,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

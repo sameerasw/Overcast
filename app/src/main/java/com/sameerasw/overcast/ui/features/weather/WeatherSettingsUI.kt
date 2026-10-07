@@ -66,6 +66,7 @@ import com.sameerasw.overcast.weather.DistanceUnit
 import com.sameerasw.overcast.weather.PrecipitationUnit
 import com.sameerasw.overcast.weather.PressureUnit
 import com.sameerasw.overcast.weather.TemperatureUnit
+import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.WeatherRepository
 import com.sameerasw.overcast.weather.WeatherUnits
 import com.sameerasw.overcast.weather.WindSpeedUnit
@@ -305,6 +306,16 @@ fun WeatherSettingsUI(
 
             SectionTitle(R.string.weather_section_display)
             RoundedCardContainer(spacing = 2.dp, cornerRadius = 24.dp) {
+                var iconStyle by remember { mutableStateOf(WeatherIconStyle.fromId(settings.getWeatherIconStyle())) }
+                Surface(color = MaterialTheme.colorScheme.surfaceBright, shape = MaterialTheme.shapes.extraSmall, modifier = Modifier.fillMaxWidth()) {
+                    WeatherIconStyleCarousel(
+                        selected = iconStyle,
+                        onSelected = {
+                            iconStyle = it
+                            settings.setWeatherIconStyle(it.id)
+                        },
+                    )
+                }
                 ConfigPickerItem(
                     title = stringResource(R.string.weather_refresh_interval_title),
                     selectedValue = intervalLabel(context, refreshMinutes),

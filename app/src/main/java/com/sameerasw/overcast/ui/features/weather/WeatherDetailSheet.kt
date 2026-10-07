@@ -116,7 +116,10 @@ import com.sameerasw.overcast.weather.effects.WeatherEffectSpec
 import com.sameerasw.overcast.weather.effects.WeatherEffects
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.model.DailyForecast
+import com.sameerasw.overcast.ui.components.LocalWeatherIconStyle
+import com.sameerasw.overcast.ui.components.WeatherIcon
 import com.sameerasw.overcast.weather.TemperatureUnit
+import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.WeatherUnits
 import com.sameerasw.overcast.weather.model.WeatherAlert
 import com.sameerasw.overcast.weather.model.WeatherError
@@ -150,6 +153,7 @@ internal class WeatherPresentation(
     val units: WeatherUnits,
     val now: Long,
     val haptics: WeatherEffectHaptics?,
+    val iconStyle: WeatherIconStyle,
 )
 
 @Composable
@@ -171,6 +175,7 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?): WeatherPresent
     val snapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
         ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
     val units = remember(settingsVersion) { WeatherUnits.from(settings) }
+    val iconStyle = remember(settingsVersion) { WeatherIconStyle.fromId(settings.getWeatherIconStyle()) }
     var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -191,7 +196,7 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?): WeatherPresent
     val effectSpec = remember(effects, snapshot?.condition, snapshot?.isDay, snapshot?.windKph, simulation?.id) {
         snapshot?.takeIf { effects }?.let { simulation?.spec ?: WeatherEffectSpec.from(it) } ?: WeatherEffectSpec.None
     }
-    return WeatherPresentation(snapshot, palette, effectSpec, units, now, haptics)
+    return WeatherPresentation(snapshot, palette, effectSpec, units, now, haptics, iconStyle)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -261,7 +266,7 @@ fun WeatherScreen(onOpenSettings: () -> Unit = {}) {
         typography = Typography,
         shapes = Shapes,
     ) {
-        CompositionLocalProvider(LocalRainSurfaces provides rainSurfaces) {
+        CompositionLocalProvider(LocalRainSurfaces provides rainSurfaces, LocalWeatherIconStyle provides presentation.iconStyle) {
         if (showLocations) {
             LocationsBottomSheet(
                 onDismissRequest = { showLocations = false },
@@ -674,12 +679,7 @@ private fun Header(snapshot: WeatherSnapshot, unit: TemperatureUnit, palette: We
                 },
                 condition = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(
-                            painterResource(WeatherFormat.icon(snapshot.condition, snapshot.isDay)),
-                            contentDescription = null,
-                            tint = palette.accent,
-                            modifier = Modifier.size(32.dp),
-                        )
+                        WeatherIcon(snapshot.condition, snapshot.isDay, palette.accent, Modifier.size(32.dp))
                         Text(snapshot.conditionText, color = palette.onBase, style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 },
@@ -903,12 +903,7 @@ private fun HourlySection(snapshot: WeatherSnapshot, unit: TemperatureUnit, pale
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(formatHour(context, hour.timeMillis), color = palette.onBaseMuted, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
-                Icon(
-                    painterResource(WeatherFormat.icon(hour.condition, hour.isDay)),
-                    null,
-                    tint = palette.accent,
-                    modifier = Modifier.size(32.dp),
-                )
+                WeatherIcon(hour.condition, hour.isDay, palette.accent, Modifier.size(32.dp))
                 Text(WeatherFormat.temperature(hour.tempC, unit), color = palette.onBase, style = MaterialTheme.typography.titleLarge, maxLines = 1, softWrap = false)
                 Text(
                     if (hour.chanceOfRain > 0) "${hour.chanceOfRain}%" else " ",
@@ -943,7 +938,7 @@ private fun DailySection(days: List<DailyForecast>, unit: TemperatureUnit, palet
                             modifier = Modifier.width(64.dp),
                             maxLines = 1,
                         )
-                        Icon(painterResource(WeatherFormat.icon(day.condition, true)), null, tint = palette.accent, modifier = Modifier.size(26.dp))
+                        WeatherIcon(day.condition, true, palette.accent, Modifier.size(26.dp))
                         Text(
                             if (day.chanceOfRain > 0) "${day.chanceOfRain}%" else "",
                             color = palette.accent,

@@ -2,6 +2,7 @@ package com.sameerasw.overcast.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
 import com.sameerasw.overcast.weather.effects.WeatherSimulationPreset
 
@@ -28,6 +29,7 @@ class SettingsRepository(
         const val KEY_WEATHER_PRESSURE_UNIT = "weather_pressure_unit"
         const val KEY_WEATHER_DISTANCE_UNIT = "weather_distance_unit"
         const val KEY_WEATHER_PRECIPITATION_UNIT = "weather_precipitation_unit"
+        const val KEY_WEATHER_ICON_STYLE = "weather_icon_style"
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
@@ -122,6 +124,9 @@ class SettingsRepository(
 
     fun getPrecipitationUnit(): String = getString(KEY_WEATHER_PRECIPITATION_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
     fun setPrecipitationUnit(unit: String) = putString(KEY_WEATHER_PRECIPITATION_UNIT, unit)
+
+    fun getWeatherIconStyle(): String = getString(KEY_WEATHER_ICON_STYLE, null) ?: WeatherIconStyle.Default.id
+    fun setWeatherIconStyle(id: String) = putString(KEY_WEATHER_ICON_STYLE, id)
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)
     fun setWeatherRefreshMinutes(minutes: Int) = putInt(KEY_WEATHER_REFRESH_MINUTES, minutes)

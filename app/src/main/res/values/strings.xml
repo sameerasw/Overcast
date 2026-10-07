@@ -49,6 +49,9 @@
     <string name="weather_sim_time_day">Day</string>
     <string name="weather_sim_time_dusk">Dusk</string>
     <string name="weather_sim_time_night">Night</string>
+    <string name="weather_icon_style_title">Icon style</string>
+    <string name="weather_icon_style_rounded">Rounded</string>
+    <string name="weather_icon_style_filled">Filled</string>
     <string name="weather_units_system">System</string>
     <string name="weather_units_temperature">Temperature</string>
     <string name="weather_units_wind">Wind speed</string>

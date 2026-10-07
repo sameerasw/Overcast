@@ -53,19 +53,4 @@ object WeatherFormat {
             PrecipitationUnit.INCHES -> "%.2f in".format(Locale.US, it / 25.4)
         }
     }
-
-    fun icon(condition: WeatherCondition, isDay: Boolean): Int = when (condition) {
-        WeatherCondition.CLEAR -> if (isDay) R.drawable.rounded_sunny_24 else R.drawable.rounded_bedtime_24
-        WeatherCondition.PARTLY_CLOUDY -> if (isDay) R.drawable.rounded_partly_cloudy_day_24 else R.drawable.rounded_partly_cloudy_night_24
-        WeatherCondition.CLOUDY -> R.drawable.rounded_cloud_24
-        WeatherCondition.FOG -> R.drawable.rounded_foggy_24
-        WeatherCondition.DRIZZLE -> R.drawable.rounded_rainy_light_24
-        WeatherCondition.RAIN -> R.drawable.rounded_rainy_24
-        WeatherCondition.HEAVY_RAIN -> R.drawable.rounded_rainy_heavy_24
-        WeatherCondition.SLEET -> R.drawable.rounded_rainy_snow_24
-        WeatherCondition.SNOW -> R.drawable.rounded_weather_snowy_24
-        WeatherCondition.HAIL -> R.drawable.rounded_weather_hail_24
-        WeatherCondition.THUNDERSTORM -> R.drawable.rounded_thunderstorm_24
-        WeatherCondition.UNKNOWN -> R.drawable.rounded_cloud_24
-    }
 }

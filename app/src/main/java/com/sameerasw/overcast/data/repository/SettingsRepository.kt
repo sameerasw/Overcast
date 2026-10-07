@@ -4,11 +4,13 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.sameerasw.overcast.weather.WeatherIconStyle
 import com.sameerasw.overcast.weather.effects.WeatherSimulation
+import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
 import com.sameerasw.overcast.weather.effects.WeatherSimulationPreset
 
 class SettingsRepository(
     context: Context,
 ) {
+    private val appContext = context.applicationContext
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -111,7 +113,10 @@ class SettingsRepository(
         putString(KEY_WEATHER_MANUAL_LOCATION, "$latitude|$longitude|${name.replace("|", " ")}")
 
     fun getWeatherUnits(): String = getString(KEY_WEATHER_UNITS, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
-    fun setWeatherUnits(units: String) = putString(KEY_WEATHER_UNITS, units)
+    fun setWeatherUnits(units: String) {
+        putString(KEY_WEATHER_UNITS, units)
+        WeatherWidgetUpdater.updateAll(appContext)
+    }
 
     fun getWindUnit(): String = getString(KEY_WEATHER_WIND_UNIT, WEATHER_UNITS_SYSTEM) ?: WEATHER_UNITS_SYSTEM
     fun setWindUnit(unit: String) = putString(KEY_WEATHER_WIND_UNIT, unit)
@@ -126,7 +131,10 @@ class SettingsRepository(
     fun setPrecipitationUnit(unit: String) = putString(KEY_WEATHER_PRECIPITATION_UNIT, unit)
 
     fun getWeatherIconStyle(): String = getString(KEY_WEATHER_ICON_STYLE, null) ?: WeatherIconStyle.Default.id
-    fun setWeatherIconStyle(id: String) = putString(KEY_WEATHER_ICON_STYLE, id)
+    fun setWeatherIconStyle(id: String) {
+        putString(KEY_WEATHER_ICON_STYLE, id)
+        WeatherWidgetUpdater.updateAll(appContext)
+    }
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)
     fun setWeatherRefreshMinutes(minutes: Int) = putInt(KEY_WEATHER_REFRESH_MINUTES, minutes)

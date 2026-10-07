@@ -52,6 +52,18 @@
             android:label="@string/settings_activity_label"
             android:theme="@style/Theme.Overcast" />
 
+        <receiver
+            android:name=".weather.widget.WeatherWidgetReceiver"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weather_widget_info" />
+        </receiver>
+
         <provider
             android:name=".weather.share.WeatherContentProvider"
             android:authorities="com.sameerasw.overcast.weather"

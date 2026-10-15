@@ -175,4 +175,18 @@
     <string name="dev_reset_welcome_done">Welcome will show again on next launch</string>
     <!-- Required by the Yandex Weather terms (point 2.4); keep the wording. -->
     <string name="weather_attribution_yandex">The data is provided by the Yandex Weather service.</string>
+    <string name="aqi_title">Air quality</string>
+    <string name="aqi_source">US AQI · Open-Meteo Air Quality</string>
+    <string name="aqi_good">Good</string>
+    <string name="aqi_moderate">Moderate</string>
+    <string name="aqi_sensitive">Unhealthy for sensitive groups</string>
+    <string name="aqi_unhealthy">Unhealthy</string>
+    <string name="aqi_very_unhealthy">Very unhealthy</string>
+    <string name="aqi_hazardous">Hazardous</string>
+    <string name="ai_section_title">AI advice</string>
+    <string name="ai_provider_title">AI provider</string>
+    <string name="ai_model_title">Model</string>
+    <string name="ai_base_url_title">API base URL</string>
+    <string name="ai_advice_title">What to wear today</string>
+    <string name="ai_advice_no_key">Add an AI key in settings to get outfit and umbrella tips.</string>
 </resources>

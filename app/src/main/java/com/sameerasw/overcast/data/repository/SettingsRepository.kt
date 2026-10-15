@@ -42,6 +42,10 @@ class SettingsRepository(
         const val KEY_WEATHER_REFRESH_MINUTES = "weather_refresh_minutes"
         const val KEY_WEATHER_EFFECTS = "weather_effects"
         const val KEY_WEATHER_HAPTICS = "weather_haptics"
+        const val KEY_AI_PROVIDER = "ai_provider"
+        const val KEY_AI_API_KEY = "ai_api_key"
+        const val KEY_AI_MODEL = "ai_model"
+        const val KEY_AI_BASE_URL = "ai_base_url"
         const val KEY_DEBUG_SIMULATED_WEATHER = "debug_simulated_weather"
         const val KEY_DEBUG_SIMULATED_ALERT = "debug_simulated_alert"
         const val KEY_DEBUG_SIMULATED_TIME = "debug_simulated_time"
@@ -188,4 +192,24 @@ class SettingsRepository(
 
     fun getWeatherRefreshMinutes(): Int = getInt(KEY_WEATHER_REFRESH_MINUTES, 60)
     fun setWeatherRefreshMinutes(minutes: Int) = putInt(KEY_WEATHER_REFRESH_MINUTES, minutes)
+
+    fun aiApiKeyName(providerId: String) = "${KEY_AI_API_KEY}_$providerId"
+
+    fun getAiProvider(): String = getString(KEY_AI_PROVIDER, "gemini") ?: "gemini"
+    fun setAiProvider(id: String) = putString(KEY_AI_PROVIDER, id)
+
+    fun getAiApiKey(providerId: String): String? =
+        getString(aiApiKeyName(providerId), null)?.takeIf { it.isNotBlank() }
+
+    fun setAiApiKey(providerId: String, key: String?) = putString(aiApiKeyName(providerId), key?.trim().orEmpty())
+
+    fun getAiModel(providerId: String): String? =
+        getString("${KEY_AI_MODEL}_$providerId", null)?.takeIf { it.isNotBlank() }
+
+    fun setAiModel(providerId: String, model: String?) = putString("${KEY_AI_MODEL}_$providerId", model?.trim().orEmpty())
+
+    fun getAiBaseUrl(providerId: String): String? =
+        getString("${KEY_AI_BASE_URL}_$providerId", null)?.takeIf { it.isNotBlank() }
+
+    fun setAiBaseUrl(providerId: String, url: String?) = putString("${KEY_AI_BASE_URL}_$providerId", url?.trim().orEmpty())
 }

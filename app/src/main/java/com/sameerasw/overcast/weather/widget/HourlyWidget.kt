@@ -32,12 +32,19 @@ import com.sameerasw.overcast.R
 import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.weather.WeatherIconSlot
 import com.sameerasw.overcast.weather.WeatherIconStyle
+import com.sameerasw.overcast.weather.WeatherRepository
+import kotlinx.coroutines.withTimeoutOrNull
 
 class HourlyWidget : GlanceAppWidget() {
     // The visible hours are worked out from the live width, so widening the widget reveals more of them.
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (WeatherRepository.isStale(context)) {
+            withTimeoutOrNull(4000L) {
+                runCatching { WeatherRepository.refresh(context, fallbackToSaved = true) }
+            }
+        }
         WidgetHub.refresh(context)
         provideContent {
             GlanceTheme {
@@ -75,10 +82,25 @@ class HourlyWidget : GlanceAppWidget() {
 class HourlyWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = HourlyWidget()
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetAlarmScheduler.scheduleNext(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val store = WidgetConfigStore(context)
         appWidgetIds.forEach { store.remove(it) }
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
     }
 }
 

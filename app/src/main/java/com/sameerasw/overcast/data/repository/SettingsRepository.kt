@@ -26,6 +26,7 @@ class SettingsRepository(
 
         const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         const val KEY_DEVELOPER_MODE_ENABLED = "developer_mode_enabled"
+        const val KEY_PROMPTED_BATTERY_OPTIMIZATION = "prompted_battery_optimization"
 
         const val KEY_WEATHER_PROVIDER = "weather_provider"
         const val KEY_WEATHER_API_KEY = "weather_api_key"
@@ -102,6 +103,9 @@ class SettingsRepository(
 
     fun isDeveloperModeEnabled(): Boolean = getBoolean(KEY_DEVELOPER_MODE_ENABLED, false)
     fun setDeveloperModeEnabled(enabled: Boolean) = putBoolean(KEY_DEVELOPER_MODE_ENABLED, enabled)
+
+    fun hasPromptedBatteryOptimization(): Boolean = getBoolean(KEY_PROMPTED_BATTERY_OPTIMIZATION, false)
+    fun setPromptedBatteryOptimization(prompted: Boolean) = putBoolean(KEY_PROMPTED_BATTERY_OPTIMIZATION, prompted)
 
 
 

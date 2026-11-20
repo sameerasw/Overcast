@@ -33,7 +33,7 @@ private const val MAX_ITEMS = 14
 internal class ForecastItem(val label: String, val icon: Int, val primary: String, val secondary: String? = null)
 
 internal fun hourlyItems(context: Context, weather: WidgetWeather): List<ForecastItem> {
-    val now = System.currentTimeMillis()
+    val now = weather.now
     val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "ha"
     val format = SimpleDateFormat(pattern, Locale.getDefault())
     return weather.snapshot?.upcomingHours(now).orEmpty()
@@ -53,7 +53,7 @@ internal fun hourlyItems(context: Context, weather: WidgetWeather): List<Forecas
 
 internal fun dailyItems(context: Context, weather: WidgetWeather): List<ForecastItem> {
     val format = SimpleDateFormat("EEE", Locale.getDefault())
-    return weather.snapshot?.upcomingDays().orEmpty().take(MAX_ITEMS).mapIndexed { index, day ->
+    return weather.snapshot?.upcomingDays(weather.now).orEmpty().take(MAX_ITEMS).mapIndexed { index, day ->
         ForecastItem(
             label = if (index == 0) context.getString(R.string.weather_detail_today) else format.format(Date(day.dayMillis)),
             icon = weather.style.icon(day.condition, true),

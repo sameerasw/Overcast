@@ -29,13 +29,15 @@ internal suspend fun loadWidgetWeather(context: Context): WidgetWeather {
     val tempOverride = settings.getSimulatedTempC()
     val alertOverride = settings.getSimulatedAlertId()
     val real = WeatherRepository.state.value.snapshot
-    val simulated = real?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
+    val now = WeatherSimulation.timeFor(real, timeOverride, System.currentTimeMillis())
+    val resolved = real?.let { if (simulation == null) it.atTime(now, context) else it }
+    val simulated = resolved?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
     val snapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }
         ?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
-        ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
+        ?.let { s -> WeatherSimulation.alertsFor(alertOverride, now)?.let { s.copy(alerts = it) } ?: s }
     return WidgetWeather(
         snapshot = snapshot,
-        now = WeatherSimulation.timeFor(snapshot, timeOverride, System.currentTimeMillis()),
+        now = now,
         timeOverride = timeOverride,
         units = WeatherUnits.from(settings),
         style = WeatherIconStyle.fromId(settings.getWeatherIconStyle()),

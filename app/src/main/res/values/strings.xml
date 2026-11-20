@@ -379,4 +379,9 @@
     <string name="dev_notification_sent">Notification sent</string>
     <string name="dev_notification_blocked">Notifications are blocked for Overcast</string>
     <string name="dev_notification_no_weather">No weather loaded yet</string>
+    <string name="battery_optimization_title">Background battery usage</string>
+    <string name="battery_optimization_unrestricted">Unrestricted (ideal for widgets)</string>
+    <string name="battery_optimization_optimized">Optimized (tap to unrestrict)</string>
+    <string name="onboarding_perm_battery_title">Background activity</string>
+    <string name="onboarding_perm_battery_usage">Allows Overcast to keep widgets and background alerts up to date.</string>
 </resources>

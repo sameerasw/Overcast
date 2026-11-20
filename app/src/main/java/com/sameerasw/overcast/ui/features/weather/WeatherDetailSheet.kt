@@ -231,11 +231,6 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?, timeline: Weath
     val timeOverride = remember(settingsVersion) { settings.getSimulatedTimeOfDay() }
     val tempOverride = remember(settingsVersion) { settings.getSimulatedTempC() }
     val alertOverride = remember(settingsVersion) { settings.getSimulatedAlertId() }
-    val simulated = real?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
-    val baseSnapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
-        ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
-    val units = remember(settingsVersion) { WeatherUnits.from(settings) }
-    val iconStyle = remember(settingsVersion) { WeatherIconStyle.fromId(settings.getWeatherIconStyle()) }
     var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -243,6 +238,12 @@ internal fun rememberWeatherPresentation(real: WeatherSnapshot?, timeline: Weath
             clock = System.currentTimeMillis()
         }
     }
+    val resolvedReal = remember(real, clock / 60_000L) { real?.atTime(clock, context) }
+    val simulated = resolvedReal?.let { r -> simulation?.let { WeatherSimulation.apply(r, it) } ?: r }
+    val baseSnapshot = simulated?.let { WeatherSimulation.withTimeOfDay(it, timeOverride) }?.let { s -> tempOverride?.let { s.copy(tempC = it) } ?: s }
+        ?.let { s -> WeatherSimulation.alertsFor(alertOverride, System.currentTimeMillis())?.let { s.copy(alerts = it) } ?: s }
+    val units = remember(settingsVersion) { WeatherUnits.from(settings) }
+    val iconStyle = remember(settingsVersion) { WeatherIconStyle.fromId(settings.getWeatherIconStyle()) }
     val now = WeatherSimulation.timeFor(baseSnapshot, timeOverride, clock)
     val timelineEnabled = remember(settingsVersion) { settings.isAmbientTimelineEnabled() }
     val looping = timeline?.loop == true

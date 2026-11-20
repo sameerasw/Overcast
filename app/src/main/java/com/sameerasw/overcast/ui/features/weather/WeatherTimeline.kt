@@ -236,19 +236,8 @@ internal fun rememberAnimatedAvailable(target: Int): () -> Int {
 }
 
 @StringRes
-internal fun conditionLabelRes(condition: WeatherCondition): Int = when (condition) {
-    WeatherCondition.CLEAR -> R.string.condition_clear
-    WeatherCondition.PARTLY_CLOUDY -> R.string.condition_partly_cloudy
-    WeatherCondition.CLOUDY -> R.string.condition_cloudy
-    WeatherCondition.FOG -> R.string.condition_fog
-    WeatherCondition.DRIZZLE -> R.string.condition_drizzle
-    WeatherCondition.RAIN -> R.string.condition_rain
-    WeatherCondition.HEAVY_RAIN -> R.string.condition_heavy_rain
-    WeatherCondition.SLEET -> R.string.condition_sleet
-    WeatherCondition.SNOW -> R.string.condition_snow
-    WeatherCondition.HAIL -> R.string.condition_hail
-    WeatherCondition.THUNDERSTORM -> R.string.condition_thunderstorm
-    WeatherCondition.UNKNOWN -> R.string.condition_unknown
-}
+internal fun conditionLabelRes(condition: WeatherCondition): Int =
+    com.sameerasw.overcast.weather.WeatherFormat.conditionLabelRes(condition)
 
-internal fun conditionLabel(context: Context, condition: WeatherCondition): String = context.getString(conditionLabelRes(condition))
+internal fun conditionLabel(context: Context, condition: WeatherCondition): String =
+    com.sameerasw.overcast.weather.WeatherFormat.conditionLabel(context, condition)

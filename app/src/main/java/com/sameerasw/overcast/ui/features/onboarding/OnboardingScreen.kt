@@ -76,6 +76,9 @@ import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.ui.core.containers.RoundedCardContainer
 import com.sameerasw.overcast.ui.features.weather.LocationsBottomSheet
 import com.sameerasw.overcast.ui.theme.GoogleSansFlexRounded
+import android.view.ViewTreeObserver
+import androidx.compose.runtime.DisposableEffect
+import com.sameerasw.overcast.utils.DeviceUtils
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherRepository
 import com.sameerasw.overcast.weather.location.DeviceLocationSource
@@ -99,6 +102,19 @@ fun OnboardingScreen(onFinished: () -> Unit) {
     var hasLocation by remember { mutableStateOf(DeviceLocationSource.hasPermission(context)) }
     var hasBackground by remember { mutableStateOf(hasBackgroundLocation(context)) }
     var hasNotifications by remember { mutableStateOf(WeatherNotifications.canPost(context)) }
+    var hasBatteryUnrestricted by remember { mutableStateOf(DeviceUtils.isIgnoringBatteryOptimizations(context)) }
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnWindowFocusChangeListener { focused ->
+            if (focused) {
+                hasBatteryUnrestricted = DeviceUtils.isIgnoringBatteryOptimizations(context)
+                hasLocation = DeviceLocationSource.hasPermission(context)
+                hasBackground = hasBackgroundLocation(context)
+                hasNotifications = WeatherNotifications.canPost(context)
+            }
+        }
+        view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
+        onDispose { view.viewTreeObserver.removeOnWindowFocusChangeListener(listener) }
+    }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         hasNotifications = WeatherNotifications.canPost(context)
     }
@@ -170,6 +186,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     hasLocation = hasLocation,
                     hasBackground = hasBackground,
                     hasNotifications = hasNotifications,
+                    hasBattery = hasBatteryUnrestricted,
                     pickedPlace = pickedPlace,
                     onAllowLocation = { locationLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
                     onAllowBackground = {
@@ -177,6 +194,9 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     },
                     onAllowNotifications = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    },
+                    onAllowBattery = {
+                        DeviceUtils.requestIgnoreBatteryOptimizations(context)
                     },
                     onSearch = { showSheet = true },
                     onBack = {
@@ -330,10 +350,12 @@ private fun LocationStep(
     hasLocation: Boolean,
     hasBackground: Boolean,
     hasNotifications: Boolean,
+    hasBattery: Boolean = true,
     pickedPlace: String?,
     onAllowLocation: () -> Unit,
     onAllowBackground: () -> Unit,
     onAllowNotifications: () -> Unit,
+    onAllowBattery: () -> Unit = {},
     onSearch: () -> Unit,
     onBack: () -> Unit,
     onFinish: () -> Unit,
@@ -398,6 +420,17 @@ private fun LocationStep(
                         },
                     )
                 }
+                PermissionCard(
+                    iconRes = R.drawable.rounded_speed_24,
+                    title = stringResource(R.string.onboarding_perm_battery_title),
+                    usage = stringResource(R.string.onboarding_perm_battery_usage),
+                    done = hasBattery,
+                    actionLabel = stringResource(R.string.onboarding_allow),
+                    onAction = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        onAllowBattery()
+                    },
+                )
                 PermissionCard(
                     iconRes = R.drawable.rounded_search_24,
                     title = stringResource(R.string.onboarding_search_title),

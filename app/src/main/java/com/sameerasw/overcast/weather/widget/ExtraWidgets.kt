@@ -36,10 +36,12 @@ import androidx.glance.ColorFilter
 import androidx.glance.layout.ContentScale
 import com.sameerasw.overcast.R
 import com.sameerasw.overcast.weather.Nowcast
+import com.sameerasw.overcast.weather.WeatherRepository
 import com.sameerasw.overcast.weather.aqi.AqiCategory
 import com.sameerasw.overcast.weather.aqi.AqiData
 import com.sameerasw.overcast.weather.aqi.AqiRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 
 private fun widgetModeAndSpacing(context: Context, glanceId: GlanceId): Pair<WidgetBackground, Dp> {
     val id = GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
@@ -69,6 +71,11 @@ class NowcastWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (WeatherRepository.isStale(context)) {
+            withTimeoutOrNull(4000L) {
+                runCatching { WeatherRepository.refresh(context, fallbackToSaved = true) }
+            }
+        }
         WidgetHub.refresh(context)
         provideContent {
             GlanceTheme {
@@ -81,10 +88,25 @@ class NowcastWidget : GlanceAppWidget() {
 class NowcastWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NowcastWidget()
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetAlarmScheduler.scheduleNext(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val store = WidgetConfigStore(context)
         appWidgetIds.forEach { store.remove(it) }
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
     }
 }
 
@@ -132,6 +154,11 @@ class AqiWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (WeatherRepository.isStale(context)) {
+            withTimeoutOrNull(4000L) {
+                runCatching { WeatherRepository.refresh(context, fallbackToSaved = true) }
+            }
+        }
         WidgetHub.refresh(context)
         val aqi = try {
             AqiRepository.current(context)
@@ -151,10 +178,25 @@ class AqiWidget : GlanceAppWidget() {
 class AqiWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AqiWidget()
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetAlarmScheduler.scheduleNext(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val store = WidgetConfigStore(context)
         appWidgetIds.forEach { store.remove(it) }
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
     }
 }
 

@@ -43,16 +43,23 @@ import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.weather.WeatherFormat
 import com.sameerasw.overcast.weather.WeatherIconSlot
 import com.sameerasw.overcast.weather.WeatherIconStyle
+import com.sameerasw.overcast.weather.WeatherRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class WeatherWidget : GlanceAppWidget() {
     // Exact gives us the real size on every resize, so the temperature is redrawn to fit rather than picked from presets.
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (WeatherRepository.isStale(context)) {
+            withTimeoutOrNull(4000L) {
+                runCatching { WeatherRepository.refresh(context, fallbackToSaved = true) }
+            }
+        }
         WidgetHub.refresh(context)
         provideContent {
             GlanceTheme {
@@ -84,10 +91,25 @@ class WeatherWidget : GlanceAppWidget() {
 class WeatherWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WeatherWidget()
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetAlarmScheduler.scheduleNext(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val store = WidgetConfigStore(context)
         appWidgetIds.forEach { store.remove(it) }
+        if (!hasActiveWidgets(context)) {
+            WidgetAlarmScheduler.cancel(context)
+        }
     }
 }
 
@@ -212,17 +234,21 @@ private fun WeatherWidgetContent(
 object WeatherWidgetUpdater {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    suspend fun updateAllSync(context: Context) {
+        val app = context.applicationContext
+        runCatching { WidgetHub.refresh(app) }
+        runCatching { WeatherWidget().updateAll(app) }
+        runCatching { HourlyWidget().updateAll(app) }
+        runCatching { DailyWidget().updateAll(app) }
+        runCatching { NowcastWidget().updateAll(app) }
+        runCatching { AqiWidget().updateAll(app) }
+    }
+
     // Cheap to call from anywhere; does nothing when no widget is placed.
     fun updateAll(context: Context) {
         val app = context.applicationContext
         scope.launch {
-            
-            runCatching { WidgetHub.refresh(app) }
-            runCatching { WeatherWidget().updateAll(app) }
-            runCatching { HourlyWidget().updateAll(app) }
-            runCatching { DailyWidget().updateAll(app) }
-            runCatching { NowcastWidget().updateAll(app) }
-            runCatching { AqiWidget().updateAll(app) }
+            updateAllSync(app)
         }
     }
 

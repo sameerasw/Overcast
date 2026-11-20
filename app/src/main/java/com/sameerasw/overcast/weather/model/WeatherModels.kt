@@ -159,6 +159,70 @@ data class WeatherSnapshot(
         upcomingDays(now).firstOrNull()?.takeIf { it.dayMillis <= now && updatedAt < it.dayMillis }
 
     fun upcomingDays(now: Long = System.currentTimeMillis()): List<DailyForecast> = daily.orEmpty().filter { it.dayMillis + DAY_MS > now }
+
+    fun isDayAt(now: Long = System.currentTimeMillis()): Boolean {
+        val todayDaily = daily?.firstOrNull { it.dayMillis <= now && it.dayMillis + DAY_MS > now }
+        val sunrise = todayDaily?.sunriseMillis ?: extras?.sunriseMillis
+        val sunset = todayDaily?.sunsetMillis ?: extras?.sunsetMillis
+        if (sunrise != null && sunset != null) {
+            val shift = Math.floorDiv(now - sunrise, DAY_MS) * DAY_MS
+            val r = sunrise + shift
+            val s = sunset + shift
+            return now in r..s
+        }
+        val currentHour = upcomingHours(now).firstOrNull()
+        if (currentHour != null) {
+            return currentHour.isDay
+        }
+        val hour = java.util.Calendar.getInstance().apply { timeInMillis = now }.get(java.util.Calendar.HOUR_OF_DAY)
+        return hour in 6..18
+    }
+
+    fun atTime(now: Long = System.currentTimeMillis(), context: android.content.Context? = null): WeatherSnapshot {
+        if (hourly.isEmpty()) return copy(isDay = isDayAt(now), highC = todayHighC(now), lowC = todayLowC(now))
+        val isDayNow = isDayAt(now)
+        val ageMs = now - updatedAt
+        if (kotlin.math.abs(ageMs) < 30 * 60_000L) {
+            return copy(isDay = isDayNow, highC = todayHighC(now), lowC = todayLowC(now))
+        }
+        val upcoming = upcomingHours(now)
+        val currentHour = upcoming.firstOrNull() ?: hourly.lastOrNull() ?: return this
+        val nextHour = upcoming.getOrNull(1)
+
+        val tempNow = if (nextHour != null && nextHour.timeMillis > currentHour.timeMillis && now >= currentHour.timeMillis) {
+            val progress = ((now - currentHour.timeMillis).toDouble() / (nextHour.timeMillis - currentHour.timeMillis)).coerceIn(0.0, 1.0)
+            currentHour.tempC + (nextHour.tempC - currentHour.tempC) * progress
+        } else {
+            currentHour.tempC
+        }
+
+        val feelsLikeNow = if (nextHour != null && currentHour.feelsLikeC != null && nextHour.feelsLikeC != null && nextHour.timeMillis > currentHour.timeMillis && now >= currentHour.timeMillis) {
+            val progress = ((now - currentHour.timeMillis).toDouble() / (nextHour.timeMillis - currentHour.timeMillis)).coerceIn(0.0, 1.0)
+            currentHour.feelsLikeC + (nextHour.feelsLikeC - currentHour.feelsLikeC) * progress
+        } else {
+            currentHour.feelsLikeC ?: tempNow
+        }
+
+        val conditionNow = currentHour.condition
+        val conditionTextNow = if (context != null) {
+            com.sameerasw.overcast.weather.WeatherFormat.conditionLabel(context, conditionNow)
+        } else {
+            if (conditionNow == condition) conditionText else conditionNow.name.lowercase().replaceFirstChar(Char::uppercase)
+        }
+
+        return copy(
+            tempC = tempNow,
+            feelsLikeC = feelsLikeNow,
+            condition = conditionNow,
+            conditionText = conditionTextNow,
+            isDay = isDayNow,
+            humidity = currentHour.humidity ?: humidity,
+            windKph = currentHour.windKph ?: windKph,
+            chanceOfRain = currentHour.chanceOfRain,
+            highC = todayHighC(now),
+            lowC = todayLowC(now),
+        )
+    }
 }
 
 sealed interface WeatherError {

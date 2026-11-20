@@ -7,6 +7,8 @@ import com.sameerasw.overcast.utils.CompatibilityMode
 import com.sameerasw.overcast.utils.HapticUtil
 import com.sameerasw.overcast.weather.WeatherRepository
 import com.sameerasw.overcast.weather.widget.WeatherWidgetUpdater
+import com.sameerasw.overcast.weather.widget.WidgetAlarmScheduler
+import com.sameerasw.overcast.weather.widget.hasActiveWidgets
 import com.sameerasw.overcast.weather.work.WeatherScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +32,9 @@ class OvercastApp : Application() {
             WeatherWidgetUpdater.refreshPreview(applicationContext)
             WeatherScheduler.schedule(applicationContext, WeatherRepository.config(applicationContext).refreshIntervalMinutes)
             WeatherNotifications.scheduleSummary(applicationContext)
+            if (hasActiveWidgets(applicationContext)) {
+                WidgetAlarmScheduler.scheduleNext(applicationContext)
+            }
         }
     }
 }

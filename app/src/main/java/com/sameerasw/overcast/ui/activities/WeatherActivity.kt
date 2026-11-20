@@ -26,6 +26,7 @@ import com.sameerasw.overcast.data.repository.SettingsRepository
 import com.sameerasw.overcast.ui.features.onboarding.OnboardingScreen
 import com.sameerasw.overcast.ui.features.weather.WeatherScreen
 import com.sameerasw.overcast.ui.theme.OvercastTheme
+import com.sameerasw.overcast.utils.DeviceUtils
 import com.sameerasw.overcast.weather.WeatherRepository
 
 class WeatherActivity : ComponentActivity() {
@@ -46,6 +47,10 @@ class WeatherActivity : ComponentActivity() {
         window.attributes = window.attributes.apply {
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
+        if (!onboarding && !DeviceUtils.isIgnoringBatteryOptimizations(this) && !settings.hasPromptedBatteryOptimization()) {
+            settings.setPromptedBatteryOptimization(true)
+            DeviceUtils.requestIgnoreBatteryOptimizations(this)
+        }
         setContent {
             var onboarded by remember { mutableStateOf(!onboarding) }
             Box(Modifier.fillMaxSize()) {
@@ -62,6 +67,10 @@ class WeatherActivity : ComponentActivity() {
                             onFinished = {
                                 settings.setOnboardingCompleted(true)
                                 onboarded = true
+                                if (!DeviceUtils.isIgnoringBatteryOptimizations(this@WeatherActivity) && !settings.hasPromptedBatteryOptimization()) {
+                                    settings.setPromptedBatteryOptimization(true)
+                                    DeviceUtils.requestIgnoreBatteryOptimizations(this@WeatherActivity)
+                                }
                             },
                         )
                     }

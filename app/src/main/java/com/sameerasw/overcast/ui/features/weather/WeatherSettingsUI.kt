@@ -26,6 +26,7 @@ import android.net.Uri
 import androidx.compose.runtime.DisposableEffect
 import android.provider.Settings
 import android.view.ViewTreeObserver
+import com.sameerasw.overcast.utils.DeviceUtils
 import com.sameerasw.overcast.weather.location.DeviceLocationSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.animation.AnimatedVisibility
@@ -132,6 +133,14 @@ fun WeatherSettingsUI(
     var locationScene by remember { mutableStateOf(settings.isLocationSceneEnabled()) }
     var weatherHaptics by remember { mutableStateOf(settings.isWeatherHapticsEnabled()) }
     var refreshMinutes by remember { mutableIntStateOf(settings.getWeatherRefreshMinutes()) }
+    var isIgnoringBattery by remember { mutableStateOf(DeviceUtils.isIgnoringBatteryOptimizations(context)) }
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnWindowFocusChangeListener { focused ->
+            if (focused) isIgnoringBattery = DeviceUtils.isIgnoringBatteryOptimizations(context)
+        }
+        view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
+        onDispose { view.viewTreeObserver.removeOnWindowFocusChangeListener(listener) }
+    }
     var savedKey by remember { mutableStateOf(settings.getWeatherApiKey(providerId).orEmpty()) }
     var keyInput by remember { mutableStateOf(savedKey) }
     var keyVisible by remember { mutableStateOf(false) }
@@ -422,6 +431,26 @@ fun WeatherSettingsUI(
                         )
                     }
                 }
+                IconToggleItem(
+                    iconRes = R.drawable.rounded_speed_24,
+                    title = stringResource(R.string.battery_optimization_title),
+                    subtitle = stringResource(
+                        if (isIgnoringBattery) R.string.battery_optimization_unrestricted
+                        else R.string.battery_optimization_optimized
+                    ),
+                    showToggle = false,
+                    onClick = {
+                        HapticUtil.performVirtualKeyHaptic(view)
+                        DeviceUtils.requestIgnoreBatteryOptimizations(context)
+                    },
+                    trailingContent = {
+                        Icon(
+                            painter = painterResource(if (isIgnoringBattery) R.drawable.rounded_check_24 else R.drawable.rounded_arrow_forward_24),
+                            contentDescription = null,
+                            tint = if (isIgnoringBattery) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
                 IconToggleItem(
                     iconRes = R.drawable.rounded_straighten_24,
                     title = stringResource(R.string.weather_section_units),
